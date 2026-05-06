@@ -12,6 +12,11 @@
 
 uint16_t sample_ADC();
 float adc_to_temp(uint16_t value);
+void debounce(struct Button *button, uint8_t input);
+
+struct Button fanButton;			//global button structs 
+struct Button lightButton;
+
 
 
 //******************************************************************************//
@@ -42,9 +47,102 @@ int main(void)
 	
   while (1)
   {
+		// Read ADC
+		float temp_value = adc_to_temp(sample_ADC());
+		
+		// Poll Switches
+		uint8_t fanInput = GPIOB->IDR & GPIO_IDR_ID0;				//Fan switch - PB0
+		uint8_t lightInput = GPIOA->IDR & GPIO_IDR_ID10;		//Light switch - PA10
+		debounce(&fanButton, fanInput);
+		debounce(&lightButton, lightInput);
+		
+		// Do stuff based on light and fan switch state
+		
+		/*
+		//Can check button states like the following:
+		if (fanButton.output == 1)
+		{
+			// do stuff
+		}
+		*/
+		
+		
+		// Check UART
+		
+		// Do stuff based on UART input
+		
+		// Temp control - control fan + heater setting based on temp
+		
+		// Change LEDs based on settings
+		
+		// If 0.25 Hz passed -> output UART packet to PC
+		
+		// Loop
+		
 	
   }
 } 
+
+void debounce(struct Button *button, uint8_t input)
+{
+	switch (button->state)
+	{
+		case NO_INPUT:
+			// Detect falling edge - active low
+			if (button->prevInput == 1 && input == 0)
+			{
+				// If button pressed reset timer and switch to pressed mode
+				button->hold_time = 0;
+				button->state = PRESSED;
+			}
+		
+			break;
+			
+		case PRESSED:
+			// Detect rising edge
+			if (input == 1)
+			{
+				if (button->hold_time >= 10)
+				{
+					// If button has been released and 10 ms have passed change state
+					button->state = CONFIRM;
+				}
+				else
+				{
+					// If button is released and not enough time then disregard result
+					button->state = NO_INPUT;
+				}
+			}
+			break;
+			
+		case CONFIRM:
+			// Reset lockout timer
+			button->lockout_time = 0;
+			button->state = LOCKOUT;
+		
+			// Flip button output
+			if (button->output == 0)
+			{
+				button->output = 1;
+			}
+			else if (button->output == 1)
+			{
+				button->output = 0;
+			}
+			break;
+		
+		case LOCKOUT:
+			// No input for 2s
+			if (button->lockout_time >=2000)
+			{
+				button->state = NO_INPUT;
+			}
+			break;
+	}
+	button->prevInput = input;
+
+}
+
 
 // TIM6 1 ms interrupt handler
 void TIM6_DAC_IRQHandler()
@@ -53,7 +151,12 @@ void TIM6_DAC_IRQHandler()
 	TIM6->SR &= ~TIM_SR_UIF;
 	
 	// Do interrupt logic
-
+	// Increment button timers
+	fanButton.hold_time++;
+	fanButton.lockout_time++;
+	lightButton.hold_time++;
+	lightButton.lockout_time++;
+	
 }
 
 // Reads current ADC value

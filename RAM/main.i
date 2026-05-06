@@ -2193,11 +2193,32 @@ void timer6_config()
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->DIER |= (0x1U << (0U));
 
 }
+
+enum ButtonState
+{
+ NO_INPUT,
+ PRESSED,
+ CONFIRM,
+ LOCKOUT
+};
+
+struct Button
+{
+ enum ButtonState state;
+ uint32_t hold_time;
+ uint32_t lockout_time;
+ uint8_t prevInput;
+ uint8_t output;
+};
 # 12 "src/main.c" 2
 
 uint16_t sample_ADC();
 float adc_to_temp(uint16_t value);
-# 23 "src/main.c"
+void debounce(struct Button *button, uint8_t input);
+
+struct Button fanButton;
+struct Button lightButton;
+# 28 "src/main.c"
 int main(void)
 {
 
@@ -2221,8 +2242,77 @@ int main(void)
   while (1)
   {
 
+  float adc_value = adc_to_temp(sample_ADC());
+
+
+  uint8_t fanInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->IDR & (0x1U << (0U));
+  uint8_t lightInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (10U));
+  debounce(&fanButton, fanInput);
+  debounce(&lightButton, lightInput);
+# 66 "src/main.c"
   }
 }
+
+void debounce(struct Button *button, uint8_t input)
+{
+ switch (button->state)
+ {
+  case NO_INPUT:
+
+   if (button->prevInput == 1 && input == 0)
+   {
+
+    button->hold_time = 0;
+    button->state = PRESSED;
+   }
+
+   break;
+
+  case PRESSED:
+
+   if (input == 1)
+   {
+    if (button->hold_time == 10)
+    {
+
+     button->state = CONFIRM;
+    }
+    else
+    {
+
+     button->state = NO_INPUT;
+    }
+   }
+   break;
+
+  case CONFIRM:
+
+   button->lockout_time = 0;
+   button->state = LOCKOUT;
+
+
+   if (button->output == 0)
+   {
+    button->output = 1;
+   }
+   else if (button->output == 1)
+   {
+    button->output = 0;
+   }
+   break;
+
+  case LOCKOUT:
+
+   if (button->lockout_time >=2000)
+   {
+    button->state = NO_INPUT;
+   }
+   break;
+ }
+ button->prevInput = input;
+
+}
+
 
 
 void TIM6_DAC_IRQHandler()
@@ -2231,6 +2321,11 @@ void TIM6_DAC_IRQHandler()
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->SR &= ~(0x1U << (0U));
 
 
+
+ fanButton.hold_time++;
+ fanButton.lockout_time++;
+ lightButton.hold_time++;
+ lightButton.lockout_time++;
 
 }
 
