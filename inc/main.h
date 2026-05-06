@@ -15,6 +15,8 @@ void RCC_init();
 void LED_GPIO_config();
 void Input_GPIO_config();
 void ADC_config();
+void UART_config();
+
 
 void RCC_init()
 {
@@ -162,6 +164,50 @@ void ADC_config()
 	
 	// Enable ADC
 	ADC3->CR2 |= ADC_CR2_ADON;
+}
+
+// UART config
+void UART_config()
+{
+	// Set MODER to alternate function mode
+	GPIOB->MODER &= ~(GPIO_MODER_MODE11_Msk | GPIO_MODER_MODE10_Msk);
+	GPIOB->MODER |= (0x02 << GPIO_MODER_MODE11_Pos) | (0x02 << GPIO_MODER_MODE10_Pos);
+	
+	//Set alternative function AF7
+	GPIOB->AFR[1] &= ~(GPIO_AFRH_AFSEL11_Msk | GPIO_AFRH_AFSEL10_Msk);
+	GPIOB->AFR[1] |= (0x07 << GPIO_AFRH_AFSEL11_Pos) | (0x07 << GPIO_AFRH_AFSEL10_Pos);
+	
+	// Turn on 16 times over sampling
+	USART3->CR1 &= ~(USART_CR1_OVER8);
+	
+	// Set baud rate - clear reg
+	USART3->BRR &= 0xFFFF0000; 
+	
+	// Set baud rate (57,600bps) 
+	USART3->BRR |= (0x2D << USART_BRR_DIV_Mantissa_Pos) | (0x09 << USART_BRR_DIV_Fraction_Pos); 
+	
+	// Set bit rate of transfer (8-bit)
+	USART3->CR1 &= ~(USART_CR1_M);
+	
+	// Set number of stop bits (1)
+	USART3->CR2 &= ~(USART_CR2_STOP_Msk);
+	USART3->CR2 |= (0x00 << USART_CR2_STOP_Pos);
+	
+	// Enable system parity
+	USART3->CR1 |= (USART_CR1_PCE);
+	
+	// Enable odd parity
+	USART3->CR1 |= (USART_CR1_PS);
+	
+	// Select async - no clock
+	USART3->CR2 &= ~(USART_CR2_CLKEN | USART_CR2_CPOL | USART_CR2_CPHA);
+	
+	//Disable hardware flow control
+	USART3->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
+	
+	//Enable USART, transmitter and receive sections
+	USART3->CR1 |= (USART_CR1_TE | USART_CR1_UE | USART_CR1_RE);
+
 }
 
 

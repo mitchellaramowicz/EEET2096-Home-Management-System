@@ -28,6 +28,7 @@ int main(void)
 	LED_GPIO_config();
 	Input_GPIO_config();
 	ADC_config();
+	UART_config();
 
 	
   while (1)
