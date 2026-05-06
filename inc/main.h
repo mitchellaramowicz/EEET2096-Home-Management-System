@@ -16,6 +16,7 @@ void LED_GPIO_config();
 void Input_GPIO_config();
 void ADC_config();
 void UART_config();
+void timer6_config();
 
 
 void RCC_init()
@@ -26,7 +27,7 @@ void RCC_init()
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN;
 	
-	// Timer setup
+	// Timer6 setup
 	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 	
 	// UART setup
@@ -209,6 +210,24 @@ void UART_config()
 	USART3->CR1 |= (USART_CR1_TE | USART_CR1_UE | USART_CR1_RE);
 
 }
+
+void timer6_config()
+{
+	// Ensure timer is off
+	TIM6->CR1 &= ~TIM_CR1_CEN;
+	// Clear prescaler
+	TIM6->PSC &= ~(TIM_PSC_PSC_Msk);
+	// 84 * 10^6 / 2559 = 32825 Hz
+	TIM6->PSC |= 2559;
+	// Clear auto reload register
+	TIM6->ARR &= ~(TIM_ARR_ARR_Msk);
+	// 1/32825 * 33 ~= 1 ms
+	TIM6->ARR |= 33;
+	// Enable interrupt for TIM6 
+	TIM6->DIER |= TIM_DIER_UIE;
+	
+}
+
 
 
 
