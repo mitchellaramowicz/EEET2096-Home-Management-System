@@ -7,7 +7,7 @@
 
 
 // Compiler pragmas
-
+#include "boardSupport.h"
 
 
 // Setup functions

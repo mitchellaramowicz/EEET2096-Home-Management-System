@@ -8,7 +8,6 @@
 ********************************************/
 
 #include <stdint.h>
-#include "boardSupport.h"
 #include "main.h"
 
 uint16_t sample_ADC();
