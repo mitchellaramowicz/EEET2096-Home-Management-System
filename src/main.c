@@ -12,11 +12,15 @@
 #include <stdio.h>
 #include "main.h"
 
+#define OUTGOING_PACKET_LENGTH_BYTES 5
+#define INCOMING_PACKET_LENGTH_BYTES 2
+
 uint16_t sample_ADC();
 float adc_to_temp(uint16_t value);
 void debounce(struct Button *button, uint8_t input);
 uint8_t* construct_packet(void);
 void send_data(void);
+int getPacket(void);
 
 struct Button fanButton;			//global button structs
 struct Button lightButton;
@@ -88,14 +92,13 @@ int main(void)
 
 
 		// Check UART
+		getPacket();
 
 		// Do stuff based on UART input
 
 		// Temp control - control fan + heater setting based on temp
 
 		// Change LEDs based on settings
-
-		// If 0.25 Hz passed -> output UART packet to PC
 
 		// Loop
 
@@ -204,7 +207,7 @@ float adc_to_temp(uint16_t value)
 
 uint8_t* construct_packet(void)
 {
-	static uint8_t packet[16];
+	static uint8_t packet[OUTGOING_PACKET_LENGTH_BYTES];
 	uint8_t index = 0;
 	packet[index++] = 0x26;
 	packet[index++] = 0x7E;
@@ -223,11 +226,11 @@ uint8_t* construct_packet(void)
 		absTemp = -currentTemp;
 	}
 
-	char tempBuffer[7]; // Set up temporary buffer for temperature string
+	char tempBuffer[8]; // Set up temporary buffer for temperature string
 	snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
 
 	// Copy temperature string into packet
-	for (uint8_t i = 0; i < 6; i++) {
+	for (uint8_t i = 0; i < 8; i++) {
 		packet[index++] = (uint8_t)tempBuffer[i];
 	}
 
@@ -249,7 +252,7 @@ void send_data()
 {
 	uint8_t* packet = construct_packet();
 
-	for (uint8_t i = 0; i < 16; i++) {
+	for (uint8_t i = 0; i < OUTGOING_PACKET_LENGTH_BYTES; i++) {
 		uint32_t timeout = 10000; // idk if this is the right timeout value
 		while ((USART3->SR & USART_SR_TXE) == 0 && timeout > 0) {
 			timeout--;
@@ -258,4 +261,57 @@ void send_data()
 			USART3->DR = packet[i];
 		}
 	}
+}
+
+int8_t getByte(void)
+{
+	int8_t receivedByte = -1;
+
+	if (USART3->SR & USART_SR_RXNE)
+	{
+		receivedByte = USART3->DR;
+	}
+
+	return receivedByte;
+}
+
+int getPacket(void)
+{
+	static uint8_t state = 0; // 0: waiting for 0x26, 1: waiting for control byte
+	int8_t receivedByte = getByte();
+
+	if (receivedByte != -1)
+	{
+		if (state == 0)
+		{
+			if (receivedByte == 0x26)
+			{
+				state = 1;
+			}
+		}
+		else if (state == 1)
+		{
+			uint8_t controlByte = (uint8_t)receivedByte;
+
+			// Control byte format is 01abcd10
+			// Bits 7-6 must be 01, and bits 1-0 must be 10.
+			if ((controlByte & 0xC3) == 0x42) // 0xC3 = 0b11000011, 0x42 = 0b01000010
+			{
+				lightButton.output = (controlByte >> 5) & 0x01; // a - bit 5: Light Output
+				isHeaterOn = (controlByte >> 4) & 0x01; // b - bit 4: Heater Output
+				isCoolingOn = (controlByte >> 3) & 0x01; // c - bit 3: Cooling Output
+				fanButton.output = (controlByte >> 2) & 0x01; // d - bit 2: Fan Output
+
+				state = 0;
+				return 1; // packet successfully processed
+			}
+			else
+			{
+				// discard packet
+				state = 0;
+			}
+		}
+	}
+
+	return -1;
 }
