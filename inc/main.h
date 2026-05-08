@@ -5,10 +5,8 @@
 *			Header File														*
 ********************************************/
 
-
 // Compiler pragmas
 #include "boardSupport.h"
-
 
 // Setup functions
 void RCC_init();
@@ -17,7 +15,6 @@ void Input_GPIO_config();
 void ADC_config();
 void UART_config();
 void timer6_config();
-
 
 void RCC_init()
 {
@@ -246,7 +243,3 @@ struct Button
 	uint8_t prevInput;				// Previous reported input
 	uint8_t output;						// Current toggled state - 0 for off, 1 for on
 };
-
-
-
-

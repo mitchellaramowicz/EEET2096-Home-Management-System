@@ -8,16 +8,23 @@
 ********************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "main.h"
 
 uint16_t sample_ADC();
 float adc_to_temp(uint16_t value);
 void debounce(struct Button *button, uint8_t input);
+uint8_t* construct_packet(void);
+void send_data(void);
 
-struct Button fanButton;			//global button structs 
+struct Button fanButton;			//global button structs
 struct Button lightButton;
 
-
+bool isHeaterOn = false;
+bool isCoolingOn = false;
+volatile double currentTemp = 0;
+volatile uint32_t ms_counter = 0;
 
 //******************************************************************************//
 // Function: main()
@@ -35,7 +42,7 @@ int main(void)
 	Input_GPIO_config();
 	ADC_config();
 	UART_config();
-	
+
 	// Timer6 interrupt config
 	__disable_irq();												// Disable global interrupt system
 	timer6_config();												// Timer6 config
@@ -44,20 +51,33 @@ int main(void)
 	__enable_irq();													// Enable global interrupt system
 	TIM6->CR1 |= TIM_CR1_CEN;								// Enable Timer6
 
-	
+
   while (1)
   {
 		// Read ADC
-		float temp_value = adc_to_temp(sample_ADC());
-		
+		currentTemp = adc_to_temp(sample_ADC());
+
 		// Poll Switches
 		uint8_t fanInput = GPIOB->IDR & GPIO_IDR_ID0;				//Fan switch - PB0
 		uint8_t lightInput = GPIOA->IDR & GPIO_IDR_ID10;		//Light switch - PA10
 		debounce(&fanButton, fanInput);
 		debounce(&lightButton, lightInput);
-		
+
+  		// Send data to PC at 0.25 Hz
+  		if (TIM6->SR & TIM_UIF_UIF) // If timer has expired
+  		{
+  			TIM6->SR &= ~TIM_SR_UIF;   // Clear UIF flag
+  			ms_counter++;
+
+  			if (ms_counter >= 4000) // If 4000ms has elapsed, send data to PC
+  			{
+  				ms_counter = 0;
+  				send_data();
+  			}
+  		}
+
 		// Do stuff based on light and fan switch state
-		
+
 		/*
 		//Can check button states like the following:
 		if (fanButton.output == 1)
@@ -65,23 +85,23 @@ int main(void)
 			// do stuff
 		}
 		*/
-		
-		
+
+
 		// Check UART
-		
+
 		// Do stuff based on UART input
-		
+
 		// Temp control - control fan + heater setting based on temp
-		
+
 		// Change LEDs based on settings
-		
+
 		// If 0.25 Hz passed -> output UART packet to PC
-		
+
 		// Loop
-		
-	
+
+
   }
-} 
+}
 
 void debounce(struct Button *button, uint8_t input)
 {
@@ -95,9 +115,9 @@ void debounce(struct Button *button, uint8_t input)
 				button->hold_time = 0;
 				button->state = PRESSED;
 			}
-		
+
 			break;
-			
+
 		case PRESSED:
 			// Detect rising edge
 			if (input == 1)
@@ -114,12 +134,12 @@ void debounce(struct Button *button, uint8_t input)
 				}
 			}
 			break;
-			
+
 		case CONFIRM:
 			// Reset lockout timer
 			button->lockout_time = 0;
 			button->state = LOCKOUT;
-		
+
 			// Flip button output
 			if (button->output == 0)
 			{
@@ -130,7 +150,7 @@ void debounce(struct Button *button, uint8_t input)
 				button->output = 0;
 			}
 			break;
-		
+
 		case LOCKOUT:
 			// No input for 2s
 			if (button->lockout_time >=2000)
@@ -149,27 +169,27 @@ void TIM6_DAC_IRQHandler()
 {
 	//Clear timer interrupt flag
 	TIM6->SR &= ~TIM_SR_UIF;
-	
+
 	// Do interrupt logic
 	// Increment button timers
 	fanButton.hold_time++;
 	fanButton.lockout_time++;
 	lightButton.hold_time++;
 	lightButton.lockout_time++;
-	
+
 }
 
 // Reads current ADC value
 uint16_t sample_ADC()
 {
 	uint16_t current_ADC = 0;
-	
+
 	// Trigger and ADC conversion;
 	ADC3->CR2 |= ADC_CR2_SWSTART;
-	
+
 	// Wait for conversion to complete
 	while((ADC3->SR & ADC_SR_EOC) == 0x00);
-	
+
 	// Get value from ADC
 	current_ADC = (ADC3->DR & 0x0000FFFF);
 	return current_ADC;
@@ -180,4 +200,62 @@ float adc_to_temp(uint16_t value)
 {
 	//return (55 - ((float)value)*(85/4095));
 	return (55 - ((float)value)*(0.02075702076));
+}
+
+uint8_t* construct_packet(void)
+{
+	static uint8_t packet[16];
+	uint8_t index = 0;
+	packet[index++] = 0x26;
+	packet[index++] = 0x7E;
+
+	// Choose the sign for the temperature
+	char sign = '+';
+	if (currentTemp < 0)
+	{
+		sign = '-';
+	}
+
+	// Get the absolute value of the temperature
+	double absTemp = currentTemp;
+	if (currentTemp < 0)
+	{
+		absTemp = -currentTemp;
+	}
+
+	char tempBuffer[7]; // Set up temporary buffer for temperature string
+	snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
+
+	// Copy temperature string into packet
+	for (uint8_t i = 0; i < 6; i++) {
+		packet[index++] = (uint8_t)tempBuffer[i];
+	}
+
+	packet[index++] = 0x7E; // tilde delimiter
+
+	packet[index++] = 0x00; // 0
+	packet[index++] = 0x01; // 1
+	packet[index++] = (uint8_t)((bool)lightButton.output); // 1 is light is on, 0 otherwise
+	packet[index++] = (uint8_t)(isHeaterOn); // 1 is heater is on, 0 otherwise
+	packet[index++] = (uint8_t)(isCoolingOn); // 1 is cooling is on, 0 otherwise
+	packet[index++] = (uint8_t)((bool)fanButton.output);// 1 is fan is on, 0 otherwise
+	packet[index++] = 0x00; // 0
+	packet[index] = 0x01; // 1
+
+	return packet;
+}
+
+void send_data()
+{
+	uint8_t* packet = construct_packet();
+
+	for (uint8_t i = 0; i < 16; i++) {
+		uint32_t timeout = 10000; // idk if this is the right timeout value
+		while ((USART3->SR & USART_SR_TXE) == 0 && timeout > 0) {
+			timeout--;
+		}
+		if (timeout > 0) {
+			USART3->DR = packet[i];
+		}
+	}
 }
