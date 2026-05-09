@@ -61,8 +61,339 @@ typedef unsigned int uintptr_t;
 typedef signed long long intmax_t;
 typedef unsigned long long uintmax_t;
 # 11 "src/main.c" 2
+# 1 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdbool.h" 1 3
+# 12 "src/main.c" 2
+# 1 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 1 3
+# 53 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+    typedef unsigned int size_t;
+# 68 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+    typedef __builtin_va_list __va_list;
+# 87 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+typedef struct __fpos_t_struct {
+    unsigned long long int __pos;
+
+
+
+
+
+    struct {
+        unsigned int __state1, __state2;
+    } __mbstate;
+} fpos_t;
+# 108 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+typedef struct __FILE FILE;
+# 119 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+struct __FILE {
+    union {
+        long __FILE_alignment;
+
+
+
+        char __FILE_size[84];
+
+    } __FILE_opaque;
+};
+# 138 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern FILE __stdin, __stdout, __stderr;
+extern FILE *__aeabi_stdin, *__aeabi_stdout, *__aeabi_stderr;
+# 224 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int remove(const char * ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int rename(const char * , const char * ) __attribute__((__nonnull__(1,2)));
+# 243 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) FILE *tmpfile(void);
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) char *tmpnam(char * );
+# 265 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fclose(FILE * ) __attribute__((__nonnull__(1)));
+# 275 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fflush(FILE * );
+# 285 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) FILE *fopen(const char * __restrict ,
+                           const char * __restrict ) __attribute__((__nonnull__(1,2)));
+# 329 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) FILE *freopen(const char * __restrict ,
+                    const char * __restrict ,
+                    FILE * __restrict ) __attribute__((__nonnull__(2,3)));
+# 342 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) void setbuf(FILE * __restrict ,
+                    char * __restrict ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int setvbuf(FILE * __restrict ,
+                   char * __restrict ,
+                   int , size_t ) __attribute__((__nonnull__(1)));
+# 370 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int fprintf(FILE * __restrict ,
+                    const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+# 393 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int _fprintf(FILE * __restrict ,
+                     const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int printf(const char * __restrict , ...) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int _printf(const char * __restrict , ...) __attribute__((__nonnull__(1)));
+
+
+
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int sprintf(char * __restrict , const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int _sprintf(char * __restrict , const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int __ARM_snprintf(char * __restrict , size_t ,
+                     const char * __restrict , ...) __attribute__((__nonnull__(3)));
+
+
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int snprintf(char * __restrict , size_t ,
+                     const char * __restrict , ...) __attribute__((__nonnull__(3)));
+# 460 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int _snprintf(char * __restrict , size_t ,
+                      const char * __restrict , ...) __attribute__((__nonnull__(3)));
+
+
+
+
+
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int fscanf(FILE * __restrict ,
+                    const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+# 503 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int _fscanf(FILE * __restrict ,
+                     const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int scanf(const char * __restrict , ...) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+
+
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int _scanf(const char * __restrict , ...) __attribute__((__nonnull__(1)));
+
+
+
+
+
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int sscanf(const char * __restrict ,
+                    const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+# 541 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __scanf_args
+extern __attribute__((__nothrow__)) int _sscanf(const char * __restrict ,
+                     const char * __restrict , ...) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int vfscanf(FILE * __restrict , const char * __restrict , __va_list) __attribute__((__nonnull__(1,2)));
+extern __attribute__((__nothrow__)) int vscanf(const char * __restrict , __va_list) __attribute__((__nonnull__(1)));
+extern __attribute__((__nothrow__)) int vsscanf(const char * __restrict , const char * __restrict , __va_list) __attribute__((__nonnull__(1,2)));
+
+extern __attribute__((__nothrow__)) int _vfscanf(FILE * __restrict , const char * __restrict , __va_list) __attribute__((__nonnull__(1,2)));
+extern __attribute__((__nothrow__)) int _vscanf(const char * __restrict , __va_list) __attribute__((__nonnull__(1)));
+extern __attribute__((__nothrow__)) int _vsscanf(const char * __restrict , const char * __restrict , __va_list) __attribute__((__nonnull__(1,2)));
+extern __attribute__((__nothrow__)) int __ARM_vsscanf(const char * __restrict , const char * __restrict , __va_list) __attribute__((__nonnull__(1,2)));
+
+extern __attribute__((__nothrow__)) int vprintf(const char * __restrict , __va_list ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int _vprintf(const char * __restrict , __va_list ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+extern __attribute__((__nothrow__)) int vfprintf(FILE * __restrict ,
+                    const char * __restrict , __va_list ) __attribute__((__nonnull__(1,2)));
+# 584 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int vsprintf(char * __restrict ,
+                     const char * __restrict , __va_list ) __attribute__((__nonnull__(1,2)));
+# 594 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int __ARM_vsnprintf(char * __restrict , size_t ,
+                     const char * __restrict , __va_list ) __attribute__((__nonnull__(3)));
+
+extern __attribute__((__nothrow__)) int vsnprintf(char * __restrict , size_t ,
+                     const char * __restrict , __va_list ) __attribute__((__nonnull__(3)));
+# 609 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int _vsprintf(char * __restrict ,
+                      const char * __restrict , __va_list ) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+extern __attribute__((__nothrow__)) int _vfprintf(FILE * __restrict ,
+                     const char * __restrict , __va_list ) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+extern __attribute__((__nothrow__)) int _vsnprintf(char * __restrict , size_t ,
+                      const char * __restrict , __va_list ) __attribute__((__nonnull__(3)));
+# 635 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+#pragma __printf_args
+extern __attribute__((__nothrow__)) int __ARM_asprintf(char ** , const char * __restrict , ...) __attribute__((__nonnull__(2)));
+extern __attribute__((__nothrow__)) int __ARM_vasprintf(char ** , const char * __restrict , __va_list ) __attribute__((__nonnull__(2)));
+# 649 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fgetc(FILE * ) __attribute__((__nonnull__(1)));
+# 659 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) char *fgets(char * __restrict , int ,
+                    FILE * __restrict ) __attribute__((__nonnull__(1,3)));
+# 673 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fputc(int , FILE * ) __attribute__((__nonnull__(2)));
+# 683 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fputs(const char * __restrict , FILE * __restrict ) __attribute__((__nonnull__(1,2)));
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int getc(FILE * ) __attribute__((__nonnull__(1)));
+# 704 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+    extern __attribute__((__nothrow__)) int (getchar)(void);
+# 713 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) char *gets(char * ) __attribute__((__nonnull__(1)));
+# 725 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int putc(int , FILE * ) __attribute__((__nonnull__(2)));
+# 737 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+    extern __attribute__((__nothrow__)) int (putchar)(int );
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int puts(const char * ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int ungetc(int , FILE * ) __attribute__((__nonnull__(2)));
+# 778 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) size_t fread(void * __restrict ,
+                    size_t , size_t , FILE * __restrict ) __attribute__((__nonnull__(1,4)));
+# 794 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) size_t __fread_bytes_avail(void * __restrict ,
+                    size_t , FILE * __restrict ) __attribute__((__nonnull__(1,3)));
+# 810 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) size_t fwrite(const void * __restrict ,
+                    size_t , size_t , FILE * __restrict ) __attribute__((__nonnull__(1,4)));
+# 822 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fgetpos(FILE * __restrict , fpos_t * __restrict ) __attribute__((__nonnull__(1,2)));
+# 833 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fseek(FILE * , long int , int ) __attribute__((__nonnull__(1)));
+# 850 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int fsetpos(FILE * __restrict , const fpos_t * __restrict ) __attribute__((__nonnull__(1,2)));
+# 863 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) long int ftell(FILE * ) __attribute__((__nonnull__(1)));
+# 877 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) void rewind(FILE * ) __attribute__((__nonnull__(1)));
+# 886 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) void clearerr(FILE * ) __attribute__((__nonnull__(1)));
+
+
+
+
+
+
+
+extern __attribute__((__nothrow__)) int feof(FILE * ) __attribute__((__nonnull__(1)));
+
+
+
+
+extern __attribute__((__nothrow__)) int ferror(FILE * ) __attribute__((__nonnull__(1)));
+
+
+
+
+extern __attribute__((__nothrow__)) void perror(const char * );
+# 917 "C:\\Users\\justi\\AppData\\Local\\Keil_v5\\ARM\\ARMCLANG\\bin\\..\\include\\stdio.h" 3
+extern __attribute__((__nothrow__)) int _fisatty(FILE * ) __attribute__((__nonnull__(1)));
+
+
+
+extern __attribute__((__nothrow__)) void __use_no_semihosting_swi(void);
+extern __attribute__((__nothrow__)) void __use_no_semihosting(void);
+# 13 "src/main.c" 2
 # 1 "./inc\\main.h" 1
-# 10 "./inc\\main.h"
+
+
+
+
+
+
+
+
 # 1 "./inc\\boardSupport.h" 1
 # 12 "./inc\\boardSupport.h"
 # 1 "./inc\\stm32f439xx.h" 1
@@ -1973,8 +2304,7 @@ void boardSupport_init(void);
 
 void delay_software_ms(uint32_t);
 void delay_software_us(uint32_t);
-# 11 "./inc\\main.h" 2
-
+# 10 "./inc\\main.h" 2
 
 
 void RCC_init();
@@ -1983,7 +2313,6 @@ void Input_GPIO_config();
 void ADC_config();
 void UART_config();
 void timer6_config();
-
 
 void RCC_init()
 {
@@ -2194,6 +2523,7 @@ void timer6_config()
 
 }
 
+
 enum ButtonState
 {
  NO_INPUT,
@@ -2201,6 +2531,7 @@ enum ButtonState
  CONFIRM,
  LOCKOUT
 };
+
 
 struct Button
 {
@@ -2210,15 +2541,34 @@ struct Button
  uint8_t prevInput;
  uint8_t output;
 };
-# 12 "src/main.c" 2
+# 14 "src/main.c" 2
+
+
+
 
 uint16_t sample_ADC();
 float adc_to_temp(uint16_t value);
 void debounce(struct Button *button, uint8_t input);
+uint8_t* construct_packet(void);
+void send_data(void);
+int getPacket(void);
 
 struct Button fanButton;
 struct Button lightButton;
-# 28 "src/main.c"
+
+_Bool isHeaterOn = 0;
+_Bool isCoolingOn = 0;
+volatile double currentTemp = 0;
+volatile uint32_t ms_counter = 0;
+
+_Bool autoControl = 1;
+_Bool fanControl = 0;
+uint32_t auto_lockout = 0;
+uint32_t fan_lockout = 0;
+void fanLightLogic(uint8_t lightSensor);
+void tempControl();
+void ledControl();
+# 49 "src/main.c"
 int main(void)
 {
 
@@ -2238,19 +2588,95 @@ int main(void)
  __enable_irq();
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->CR1 |= (0x1U << (0U));
 
+ fanButton.output = 1;
 
   while (1)
   {
 
-  float adc_value = adc_to_temp(sample_ADC());
+  currentTemp = adc_to_temp(sample_ADC());
 
 
-  uint8_t fanInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->IDR & (0x1U << (0U));
-  uint8_t lightInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (10U));
-  debounce(&fanButton, fanInput);
-  debounce(&lightButton, lightInput);
-# 66 "src/main.c"
+  volatile uint8_t fanInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->IDR & (0x1U << (0U));
+  volatile uint8_t lightInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (10U));
+
+  if (autoControl == 1)
+  {
+
+   debounce(&fanButton, fanInput);
+   debounce(&lightButton, lightInput);
   }
+  else if ((autoControl == 0) && (auto_lockout >= 1000))
+  {
+
+   debounce(&lightButton, lightInput);
+  }
+
+
+
+  if (ms_counter >= 4000)
+  {
+   ms_counter = 0;
+   send_data();
+  }
+
+
+  volatile uint8_t lightIntensity = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (8U));
+
+  fanLightLogic(lightIntensity);
+
+
+  if(getPacket() == 1)
+  {
+
+   autoControl = 0;
+   auto_lockout = 0;
+   if ((isCoolingOn == 1) && (isHeaterOn == 1))
+   {
+
+    isCoolingOn = 1;
+    isHeaterOn = 0;
+   }
+  }
+
+
+  if (autoControl == 0 && auto_lockout >= 10000)
+  {
+   autoControl = 1;
+  }
+
+
+  tempControl();
+
+
+  ledControl();
+
+
+
+
+  }
+}
+
+
+void TIM6_DAC_IRQHandler()
+{
+
+ ((TIM_TypeDef *) (0x40000000U + 0x1000U))->SR &= ~(0x1U << (0U));
+
+
+
+ fanButton.hold_time++;
+ fanButton.lockout_time++;
+ lightButton.hold_time++;
+ lightButton.lockout_time++;
+
+
+ fan_lockout++;
+ auto_lockout++;
+
+
+ ms_counter++;
+
+
 }
 
 void debounce(struct Button *button, uint8_t input)
@@ -2272,7 +2698,7 @@ void debounce(struct Button *button, uint8_t input)
 
    if (input == 1)
    {
-    if (button->hold_time == 10)
+    if (button->hold_time >= 10)
     {
 
      button->state = CONFIRM;
@@ -2314,22 +2740,6 @@ void debounce(struct Button *button, uint8_t input)
 }
 
 
-
-void TIM6_DAC_IRQHandler()
-{
-
- ((TIM_TypeDef *) (0x40000000U + 0x1000U))->SR &= ~(0x1U << (0U));
-
-
-
- fanButton.hold_time++;
- fanButton.lockout_time++;
- lightButton.hold_time++;
- lightButton.lockout_time++;
-
-}
-
-
 uint16_t sample_ADC()
 {
  uint16_t current_ADC = 0;
@@ -2350,4 +2760,258 @@ float adc_to_temp(uint16_t value)
 {
 
  return (55 - ((float)value)*(0.02075702076));
+}
+
+uint8_t* construct_packet(void)
+{
+ static uint8_t packet[5];
+ uint8_t index = 0;
+ packet[index++] = 0x26;
+ packet[index++] = 0x7E;
+
+
+ char sign = '+';
+ if (currentTemp < 0)
+ {
+  sign = '-';
+ }
+
+
+ double absTemp = currentTemp;
+ if (currentTemp < 0)
+ {
+  absTemp = -currentTemp;
+ }
+
+ char tempBuffer[8];
+ snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
+
+
+ for (uint8_t i = 0; i < 8; i++) {
+  packet[index++] = (uint8_t)tempBuffer[i];
+ }
+
+ packet[index++] = 0x7E;
+
+ packet[index++] = 0x00;
+ packet[index++] = 0x01;
+ packet[index++] = (uint8_t)((_Bool)lightButton.output);
+ packet[index++] = (uint8_t)(isHeaterOn);
+ packet[index++] = (uint8_t)(isCoolingOn);
+ packet[index++] = (uint8_t)((_Bool)fanButton.output);
+ packet[index++] = 0x00;
+ packet[index] = 0x01;
+
+ return packet;
+}
+
+void send_data()
+{
+ uint8_t* packet = construct_packet();
+
+ for (uint8_t i = 0; i < 5; i++) {
+  uint32_t timeout = 10000;
+  while ((((USART_TypeDef *) (0x40000000U + 0x4800U))->SR & (0x1U << (7U))) == 0 && timeout > 0) {
+   timeout--;
+  }
+  if (timeout > 0) {
+   ((USART_TypeDef *) (0x40000000U + 0x4800U))->DR = packet[i];
+  }
+ }
+}
+
+int8_t getByte(void)
+{
+ int8_t receivedByte = -1;
+
+ if (((USART_TypeDef *) (0x40000000U + 0x4800U))->SR & (0x1U << (5U)))
+ {
+  receivedByte = ((USART_TypeDef *) (0x40000000U + 0x4800U))->DR;
+ }
+
+ return receivedByte;
+}
+
+int getPacket(void)
+{
+ static uint8_t state = 0;
+ int8_t receivedByte = getByte();
+
+ if (receivedByte != -1)
+ {
+  if (state == 0)
+  {
+   if (receivedByte == 0x26)
+   {
+    state = 1;
+   }
+  }
+  else if (state == 1)
+  {
+   uint8_t controlByte = (uint8_t)receivedByte;
+
+
+
+   if ((controlByte & 0xC3) == 0x42)
+   {
+    if ((currentTemp >= 15) || (currentTemp <= 30))
+    {
+
+     lightButton.output = (controlByte >> 5) & 0x01;
+     isHeaterOn = (controlByte >> 4) & 0x01;
+     isCoolingOn = (controlByte >> 3) & 0x01;
+     fanButton.output = (controlByte >> 2) & 0x01;
+
+     state = 0;
+     return 1;
+    }
+    else
+    {
+
+     state = 0;
+    }
+   }
+   else
+   {
+
+    state = 0;
+   }
+  }
+ }
+
+ return -1;
+}
+
+void fanLightLogic(uint8_t lightSensor)
+{
+
+ if (fanButton.output == 0)
+ {
+  if (fanControl == 0)
+  {
+
+   fan_lockout = 0;
+   fanControl = 1;
+  }
+  else if (fanControl == 1)
+  {
+   if (fan_lockout >= 10000)
+   {
+
+    fanControl = 0;
+    fanButton.output = 1;
+   }
+  }
+ }
+ else
+ {
+  fanControl = 0;
+ }
+
+
+ if ((lightButton.output == 1) && (lightSensor == 1))
+ {
+
+  lightButton.output = 0;
+ }
+ else if ((lightButton.output == 1) && (lightSensor == 0))
+ {
+
+  lightButton.output = 1;
+ }
+
+}
+
+void tempControl()
+{
+ if (autoControl == 1)
+ {
+  if (fanControl == 0)
+  {
+   if (currentTemp < 22)
+   {
+
+    isHeaterOn = 1;
+    isCoolingOn = 0;
+    fanButton.output = 1;
+   }
+   else if (currentTemp > 24)
+   {
+
+    isHeaterOn = 0;
+    isCoolingOn = 1;
+    fanButton.output = 1;
+   }
+   else
+   {
+
+    isHeaterOn = 0;
+    isCoolingOn = 0;
+    fanButton.output = 1;
+   }
+  }
+  else if (fanControl == 1)
+  {
+   if (currentTemp < 22)
+   {
+
+    isHeaterOn = 1;
+    isCoolingOn = 0;
+    fanButton.output = 0;
+   }
+   else if (currentTemp > 24)
+   {
+
+    isHeaterOn = 0;
+    isCoolingOn = 1;
+    fanButton.output = 0;
+   }
+   else
+   {
+
+    isHeaterOn = 0;
+    isCoolingOn = 0;
+    fanButton.output = 0;
+   }
+  }
+ }
+}
+
+void ledControl()
+{
+ if (fanButton.output == 1)
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->ODR &= ~((0x1U << (1U)));
+ }
+ else
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->ODR |= (0x1U << (1U));
+ }
+
+ if (lightButton.output == 1)
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->ODR &= ~((0x1U << (9U)));
+ }
+ else
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->ODR |= (0x1U << (9U));
+ }
+
+ if (isHeaterOn == 1)
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x1400U))->ODR &= ~((0x1U << (8U)));
+ }
+ else
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x1400U))->ODR |= (0x1U << (8U));
+ }
+
+ if (isCoolingOn == 1)
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->ODR &= ~((0x1U << (8U)));
+ }
+ else
+ {
+  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->ODR |= (0x1U << (8U));
+ }
 }

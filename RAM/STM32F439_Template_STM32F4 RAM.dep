@@ -9,8 +9,8 @@ I (RTE\Device\STM32F439IIHx\system_stm32f4xx.h)(0x69FAA46F)
 I (inc\ioMapping.h)(0x69FAA46F)
 I (inc\boardSupport.h)(0x69FAA46F)
 I (inc\gpioControl.h)(0x69FAA46F)
-F (.\src\main.c)(0x69FAD71B)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char-D__MICROLIB -gdwarf-4 -O0 -fno-function-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ./src/CMSIS -I ./src/CMSIS/arm_math -I ./inc -I ./inc/CMSIS -I ./RTE/Device/STM32F439IIHx -D__UVISION_VERSION="543" -DSTM32F439xx -D_RTE_ -DDAUGHTER_REV1 -DSTM32F439-o ./ram/main.o -MMD)
-I (inc\main.h)(0x69FAD6C1)
+F (.\src\main.c)(0x69FEAF4E)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char-D__MICROLIB -gdwarf-4 -O0 -fno-function-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ./src/CMSIS -I ./src/CMSIS/arm_math -I ./inc -I ./inc/CMSIS -I ./RTE/Device/STM32F439IIHx -D__UVISION_VERSION="543" -DSTM32F439xx -D_RTE_ -DDAUGHTER_REV1 -DSTM32F439-o ./ram/main.o -MMD)
+I (inc\main.h)(0x69FE877E)
 I (inc\boardSupport.h)(0x69FAA46F)
 I (inc\stm32f439xx.h)(0x69FAA794)
 I (inc\CMSIS\core_cm4.h)(0x69FAA46F)
@@ -20,7 +20,7 @@ I (inc\stm32f439xx.h)(0x69FAA794)
 I (inc\CMSIS\core_cm4.h)(0x69FAA46F)
 I (RTE\Device\STM32F439IIHx\system_stm32f4xx.h)(0x69FAA46F)
 I (inc\gpioControl.h)(0x69FAA46F)
-F (.\inc\main.h)(0x69FAD6C1)()
+F (.\inc\main.h)(0x69FE877E)()
 F (.\inc\config.h)(0x69FAA46F)()
 F (.\inc\boardSupport.h)(0x69FAA46F)()
 F (.\inc\stm32f439xx.h)(0x69FAA794)()

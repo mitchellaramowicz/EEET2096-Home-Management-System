@@ -30,6 +30,16 @@ bool isCoolingOn = false;
 volatile double currentTemp = 0;
 volatile uint32_t ms_counter = 0;
 
+bool autoControl = true;													// True - heater/cooler/fan controlled by temp, False - controlled by UART
+bool fanControl = false;													// True - Fan in manual off control, False - Fan in auto control
+uint32_t auto_lockout = 0;												// Timer for counting lockout time till auto override - max 10s
+uint32_t fan_lockout = 0;													// Timer for counting fan lockout time till auto override - max 10s
+void fanLightLogic(uint8_t lightSensor);					// Handle fan and light switch logic
+void tempControl();																// Handle setting cooler/heater	based on temperature				
+void ledControl();																// Control LEDs based on current system settings
+
+
+
 //******************************************************************************//
 // Function: main()
 // Input : None
@@ -54,7 +64,8 @@ int main(void)
 	NVIC_EnableIRQ(TIM6_DAC_IRQn);					// Enable interrupt
 	__enable_irq();													// Enable global interrupt system
 	TIM6->CR1 |= TIM_CR1_CEN;								// Enable Timer6
-
+	
+	fanButton.output = 1;										// Set fan to be on by default
 
   while (1)
   {
@@ -62,48 +73,87 @@ int main(void)
 		currentTemp = adc_to_temp(sample_ADC());
 
 		// Poll Switches
-		uint8_t fanInput = GPIOB->IDR & GPIO_IDR_ID0;				//Fan switch - PB0
-		uint8_t lightInput = GPIOA->IDR & GPIO_IDR_ID10;		//Light switch - PA10
-		debounce(&fanButton, fanInput);
-		debounce(&lightButton, lightInput);
+		volatile uint8_t fanInput = GPIOB->IDR & GPIO_IDR_ID0;				//Fan switch - PB0
+		volatile uint8_t lightInput = GPIOA->IDR & GPIO_IDR_ID10;		  //Light switch - PA10
+		
+		if (autoControl == true)
+		{
+			// Allow fan button and light button to work when in auto control
+			debounce(&fanButton, fanInput);
+			debounce(&lightButton, lightInput);
+		}
+		else if ((autoControl == false) && (auto_lockout >= 1000))
+		{
+			// If not in auto control only let light button work if 1 sec passed else UART takes precedence
+			debounce(&lightButton, lightInput);
+		}
+		
 
-  		// Send data to PC at 0.25 Hz
-  		if (TIM6->SR & TIM_UIF_UIF) // If timer has expired
-  		{
-  			TIM6->SR &= ~TIM_SR_UIF;   // Clear UIF flag
-  			ms_counter++;
-
-  			if (ms_counter >= 4000) // If 4000ms has elapsed, send data to PC
-  			{
-  				ms_counter = 0;
-  				send_data();
-  			}
-  		}
+  	// Send data to PC at 0.25 Hz
+		if (ms_counter >= 4000) // If 4000ms has elapsed, send data to PC
+		{
+			ms_counter = 0;
+			send_data();
+		}
 
 		// Do stuff based on light and fan switch state
-
-		/*
-		//Can check button states like the following:
-		if (fanButton.output == 1)
-		{
-			// do stuff
-		}
-		*/
-
+		volatile uint8_t lightIntensity = GPIOA->IDR & GPIO_IDR_ID8;	// Light intensity sensor - PA8
+																																	// Maybe add hold functionality later
+		fanLightLogic(lightIntensity);
 
 		// Check UART
-		getPacket();
+		if(getPacket() == 1)
+		{
+			// If successful packet received switch to UART controlled mode
+			autoControl = false;
+			auto_lockout = 0;
+			if ((isCoolingOn == true) && (isHeaterOn == true))
+			{
+				// If both cooling and heating set on by UART default to only cooling on
+				isCoolingOn = true;
+				isHeaterOn = false;
+			}
+		}
+		
+		// Once 10s lockout complete switch back to auto control
+		if (autoControl == false && auto_lockout >= 10000)	
+		{
+			autoControl = true;
+		}
 
-		// Do stuff based on UART input
-
-		// Temp control - control fan + heater setting based on temp
+		// Temp control - control fan + heater setting based on temp only if in auto control
+		tempControl();
 
 		// Change LEDs based on settings
+		ledControl();
 
 		// Loop
 
 
   }
+}
+
+// TIM6 1 ms interrupt handler
+void TIM6_DAC_IRQHandler()
+{
+	//Clear timer interrupt flag
+	TIM6->SR &= ~TIM_SR_UIF;
+
+	// Do interrupt logic
+	// Increment button timers
+	fanButton.hold_time++;
+	fanButton.lockout_time++;
+	lightButton.hold_time++;
+	lightButton.lockout_time++;
+	
+	//Increment lockout timers
+	fan_lockout++;
+	auto_lockout++;
+	
+	// Increment timer for UART packet send - 0.25 Hz
+	ms_counter++;
+	
+	// No need to restart timer as it is in free-run mode
 }
 
 void debounce(struct Button *button, uint8_t input)
@@ -163,22 +213,6 @@ void debounce(struct Button *button, uint8_t input)
 			break;
 	}
 	button->prevInput = input;
-
-}
-
-
-// TIM6 1 ms interrupt handler
-void TIM6_DAC_IRQHandler()
-{
-	//Clear timer interrupt flag
-	TIM6->SR &= ~TIM_SR_UIF;
-
-	// Do interrupt logic
-	// Increment button timers
-	fanButton.hold_time++;
-	fanButton.lockout_time++;
-	lightButton.hold_time++;
-	lightButton.lockout_time++;
 
 }
 
@@ -297,13 +331,22 @@ int getPacket(void)
 			// Bits 7-6 must be 01, and bits 1-0 must be 10.
 			if ((controlByte & 0xC3) == 0x42) // 0xC3 = 0b11000011, 0x42 = 0b01000010
 			{
-				lightButton.output = (controlByte >> 5) & 0x01; // a - bit 5: Light Output
-				isHeaterOn = (controlByte >> 4) & 0x01; // b - bit 4: Heater Output
-				isCoolingOn = (controlByte >> 3) & 0x01; // c - bit 3: Cooling Output
-				fanButton.output = (controlByte >> 2) & 0x01; // d - bit 2: Fan Output
+				if ((currentTemp >= 15) || (currentTemp <= 30))
+				{
+					// UART input only valid if temp between 15 and 30
+					lightButton.output = (controlByte >> 5) & 0x01; // a - bit 5: Light Output
+					isHeaterOn = (controlByte >> 4) & 0x01; // b - bit 4: Heater Output
+					isCoolingOn = (controlByte >> 3) & 0x01; // c - bit 3: Cooling Output
+					fanButton.output = (controlByte >> 2) & 0x01; // d - bit 2: Fan Output
 
-				state = 0;
-				return 1; // packet successfully processed
+					state = 0;
+					return 1; // packet successfully processed
+				}
+				else
+				{
+					// discard packet
+					state = 0;
+				}
 			}
 			else
 			{
@@ -314,4 +357,138 @@ int getPacket(void)
 	}
 
 	return -1;
+}
+
+void fanLightLogic(uint8_t lightSensor)
+{
+	// Fan control
+	if (fanButton.output == 0)	// Fan is switched off
+	{
+		if (fanControl == false)
+		{
+			// If fan has been switched off for the first time enable 10s countdown and manual control
+			fan_lockout = 0;
+			fanControl = true;
+		}
+		else if (fanControl == true)	// Fan is in manual control
+		{
+			if (fan_lockout >= 10000)
+			{
+				// If 10s passed turn fan back on and turn off manual control
+				fanControl = false;
+				fanButton.output = 1;
+			}
+		}
+	}
+	else
+	{
+		fanControl = false;
+	}
+	
+	// Light control
+	if ((lightButton.output == 1) && (lightSensor == 1))
+	{
+		// If light button is pressed and light sensor detects light then switch off light button
+		lightButton.output = 0;
+	}
+	else if ((lightButton.output == 1) && (lightSensor == 0))
+	{
+		// If light button is pressed and no light detected then allow button input to continue
+		lightButton.output = 1;
+	}
+	
+}
+
+void tempControl()
+{
+	if (autoControl == true)
+	{
+		if (fanControl == false)	// If fan off manual overridde is not on
+		{
+			if (currentTemp < 22)
+			{
+				// If temp less then 22, heater + fan ON
+				isHeaterOn = true;
+				isCoolingOn = false;
+				fanButton.output = 1;
+			}
+			else if (currentTemp > 24)
+			{
+				// If temp more then 24, cooler + fan ON
+				isHeaterOn = false;
+				isCoolingOn = true;
+				fanButton.output = 1;
+			}
+			else
+			{
+				// Else in hysteresis band, heater + cooler OFF, fan ON
+				isHeaterOn = false;
+				isCoolingOn = false;
+				fanButton.output = 1;
+			}
+		}
+		else if (fanControl == true)	// If fan off manual overridde is on
+		{
+			if (currentTemp < 22)
+			{
+				// If temp less then 22, heater ON + fan OFF
+				isHeaterOn = true;
+				isCoolingOn = false;
+				fanButton.output = 0;
+			}
+			else if (currentTemp > 24)
+			{
+				// If temp more then 24, cooler ON + fan OFF
+				isHeaterOn = false;
+				isCoolingOn = true;
+				fanButton.output = 0;
+			}
+			else
+			{
+				// Else in hysteresis band, heater + cooler OFF, fan OFF
+				isHeaterOn = false;
+				isCoolingOn = false;
+				fanButton.output = 0;
+			}
+		}
+	}
+}
+
+void ledControl()
+{
+	if (fanButton.output == 1)	// Fan control output - PB1
+	{
+		GPIOB->ODR &= ~(GPIO_ODR_OD1);	// Active low
+	}
+	else
+	{
+		GPIOB->ODR |= GPIO_ODR_OD1;
+	}
+	
+	if (lightButton.output == 1)	// Light control output - PA9
+	{
+		GPIOA->ODR &= ~(GPIO_ODR_OD9);	// Active low
+	}
+	else
+	{
+		GPIOA->ODR |= GPIO_ODR_OD9;
+	}
+	
+	if (isHeaterOn == true)	// Heater output - PF8
+	{
+		GPIOF->ODR &= ~(GPIO_ODR_OD8);	// Active low
+	}
+	else
+	{
+		GPIOF->ODR |= GPIO_ODR_OD8;
+	}
+	
+	if (isCoolingOn == true)	// Cooler output - PB8
+	{
+		GPIOB->ODR &= ~(GPIO_ODR_OD8);	// Active low
+	}
+	else
+	{
+		GPIOB->ODR |= GPIO_ODR_OD8;
+	}
 }
