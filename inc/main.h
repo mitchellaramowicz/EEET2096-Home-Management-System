@@ -9,14 +9,14 @@
 #include "boardSupport.h"
 
 // Setup functions
-void RCC_init();
-void LED_GPIO_config();
-void Input_GPIO_config();
-void ADC_config();
-void UART_config();
-void timer6_config();
+void RCC_init(void);
+void LED_GPIO_config(void);
+void Input_GPIO_config(void);
+void ADC_config(void);
+void UART_config(void);
+void timer6_config(void);
 
-void RCC_init()
+void RCC_init(void)
 {
 	
 	// Enable GPIOA, GPIOB and GPIOF
@@ -54,7 +54,7 @@ void RCC_init()
 	
 }
 
-void LED_GPIO_config()
+void LED_GPIO_config(void)
 {
 	// Configure LED2, 5, 6 and 7 for output
 	// Clear MODER bits
@@ -99,7 +99,7 @@ void LED_GPIO_config()
 	GPIOF->ODR |= GPIO_ODR_OD8;
 }
 
-void Input_GPIO_config()
+void Input_GPIO_config(void)
 {
 	// Configure GPIO inputs
 	// Clear MODER bits	/ Enable as input mode
@@ -109,7 +109,7 @@ void Input_GPIO_config()
 	GPIOF->MODER &= ~(GPIO_MODER_MODE10_Msk);	// Clear modder bits for GPIOF_10
 	
 	// Enable PF10 as analogue mode
-	GPIOF->MODER |= 0x03 << GPIO_MODER_MODE10_Pos;	 // Enable PF8 as analogue (0b11)
+	GPIOF->MODER |= 0x03 << GPIO_MODER_MODE10_Pos;	// Enable PF8 as analogue (0b11)
 	
 	// Enable push-pull output - does not affect input mode
 	GPIOA->OTYPER &= ~(GPIO_OTYPER_OT8);	//Clear bit 8
@@ -123,20 +123,20 @@ void Input_GPIO_config()
 	GPIOB->OSPEEDR &= ~(0x03 << GPIO_OSPEEDR_OSPEED0_Pos);
 	GPIOF->OSPEEDR &= ~(0x03 << GPIO_OSPEEDR_OSPEED10_Pos);
 	
-	GPIOA->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED8_Pos);	// Set to medium speed (0b01)
+	GPIOA->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED8_Pos);		// Set to medium speed (0b01)
 	GPIOA->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED10_Pos);
 	GPIOB->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED0_Pos);
 	GPIOF->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED10_Pos);
 	
 	// Clear PUPDR reg
-	GPIOA->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD8_Pos);	// Clear bits
+	GPIOA->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD8_Pos);				// Clear bits
 	GPIOA->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD10_Pos);
 	GPIOB->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD0_Pos);
 	GPIOF->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD10_Pos);
 	
 }
 
-void ADC_config()
+void ADC_config(void)
 {
 	// Configure ADC3 channel 8 -> PF10 
 	// Disable battery sensing channel
@@ -165,7 +165,7 @@ void ADC_config()
 }
 
 // UART config
-void UART_config()
+void UART_config(void)
 {
 	// Set MODER to alternate function mode
 	GPIOB->MODER &= ~(GPIO_MODER_MODE11_Msk | GPIO_MODER_MODE10_Msk);
@@ -208,7 +208,7 @@ void UART_config()
 
 }
 
-void timer6_config()
+void timer6_config(void)
 {
 	// Ensure timer is off
 	TIM6->CR1 &= ~TIM_CR1_CEN;

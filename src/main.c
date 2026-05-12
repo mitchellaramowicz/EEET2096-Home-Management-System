@@ -2,7 +2,7 @@
 /********************************************
 *			STM32F439 Main (C Startup File)  			*
 *			Developed for the STM32								*
-*			Author: 						*
+*			Author: 															*
 *			Source File														*
 *     Updated: 04/03/2026 	  							*
 ********************************************/
@@ -15,28 +15,29 @@
 #define OUTGOING_PACKET_LENGTH_BYTES 5
 #define INCOMING_PACKET_LENGTH_BYTES 2
 
-uint16_t sample_ADC();
+uint16_t sample_ADC(void);
 float adc_to_temp(uint16_t value);
 void debounce(struct Button *button, uint8_t input);
 uint8_t* construct_packet(void);
 void send_data(void);
 int getPacket(void);
 
-struct Button fanButton;			//global button structs
-struct Button lightButton;
+static struct Button fanButton;										//global button structs
+static struct Button lightButton;
 
-bool isHeaterOn = false;
-bool isCoolingOn = false;
-volatile double currentTemp = 0;
-volatile uint32_t ms_counter = 0;
+static bool isHeaterOn = false;
+static bool isCoolingOn = false;
+static volatile float currentTemp = 0;
+static volatile uint32_t ms_counter = 0;
 
-bool autoControl = true;													// True - heater/cooler/fan controlled by temp, False - controlled by UART
-bool fanControl = false;													// True - Fan in manual off control, False - Fan in auto control
-uint32_t auto_lockout = 0;												// Timer for counting lockout time till auto override - max 10s
-uint32_t fan_lockout = 0;													// Timer for counting fan lockout time till auto override - max 10s
+static bool autoControl = true;										// True - heater/cooler/fan controlled by temp, False - controlled by UART
+static bool fanControl = false;										// True - Fan in manual off control, False - Fan in auto control
+static uint32_t auto_lockout = 0;									// Timer for counting lockout time till auto override - max 10s
+static uint32_t fan_lockout = 0;									// Timer for counting fan lockout time till auto override - max 10s
+
 void fanLightLogic(uint8_t lightSensor);					// Handle fan and light switch logic
-void tempControl();																// Handle setting cooler/heater	based on temperature				
-void ledControl();																// Control LEDs based on current system settings
+void tempControl(void);														// Handle setting cooler/heater	based on temperature				
+void ledControl(void);														// Control LEDs based on current system settings
 
 
 
@@ -97,8 +98,8 @@ int main(void)
 		}
 
 		// Do stuff based on light and fan switch state
-		volatile uint8_t lightIntensity = GPIOA->IDR & GPIO_IDR_ID8;	// Light intensity sensor - PA8
-																																	// Maybe add hold functionality later
+		volatile uint8_t lightIntensity = GPIOA->IDR & GPIO_IDR_ID8;			// Light intensity sensor - PA8
+																																			// Maybe add hold functionality later
 		fanLightLogic(lightIntensity);
 
 		// Check UART
@@ -134,7 +135,7 @@ int main(void)
 }
 
 // TIM6 1 ms interrupt handler
-void TIM6_DAC_IRQHandler()
+void TIM6_DAC_IRQHandler(void)
 {
 	//Clear timer interrupt flag
 	TIM6->SR &= ~TIM_SR_UIF;
@@ -236,7 +237,7 @@ uint16_t sample_ADC()
 float adc_to_temp(uint16_t value)
 {
 	//return (55 - ((float)value)*(85/4095));
-	return (55 - ((float)value)*(0.02075702076));
+	return (55.0f - ((float)value)*(0.02075702076f));
 }
 
 uint8_t* construct_packet(void)
@@ -254,7 +255,7 @@ uint8_t* construct_packet(void)
 	}
 
 	// Get the absolute value of the temperature
-	double absTemp = currentTemp;
+	float absTemp = currentTemp;
 	if (currentTemp < 0)
 	{
 		absTemp = -currentTemp;
@@ -268,26 +269,26 @@ uint8_t* construct_packet(void)
 		packet[index++] = (uint8_t)tempBuffer[i];
 	}
 
-	packet[index++] = 0x7E; // tilde delimiter
+	packet[index++] = 0x7E;																			// tilde delimiter
 
-	packet[index++] = 0x00; // 0
-	packet[index++] = 0x01; // 1
-	packet[index++] = (uint8_t)((bool)lightButton.output); // 1 is light is on, 0 otherwise
-	packet[index++] = (uint8_t)(isHeaterOn); // 1 is heater is on, 0 otherwise
-	packet[index++] = (uint8_t)(isCoolingOn); // 1 is cooling is on, 0 otherwise
-	packet[index++] = (uint8_t)((bool)fanButton.output);// 1 is fan is on, 0 otherwise
-	packet[index++] = 0x00; // 0
-	packet[index] = 0x01; // 1
+	packet[index++] = 0x00; 																		// 0
+	packet[index++] = 0x01; 																		// 1
+	packet[index++] = (uint8_t)((bool)lightButton.output); 			// 1 is light is on, 0 otherwise
+	packet[index++] = (uint8_t)(isHeaterOn); 										// 1 is heater is on, 0 otherwise
+	packet[index++] = (uint8_t)(isCoolingOn); 									// 1 is cooling is on, 0 otherwise
+	packet[index++] = (uint8_t)((bool)fanButton.output);				// 1 is fan is on, 0 otherwise
+	packet[index++] = 0x00; 																		// 0
+	packet[index] = 0x01; 																			// 1
 
 	return packet;
 }
 
-void send_data()
+void send_data(void)
 {
 	uint8_t* packet = construct_packet();
 
 	for (uint8_t i = 0; i < OUTGOING_PACKET_LENGTH_BYTES; i++) {
-		uint32_t timeout = 10000; // idk if this is the right timeout value
+		uint32_t timeout = 10000; 																	// idk if this is the right timeout value
 		while ((USART3->SR & USART_SR_TXE) == 0 && timeout > 0) {
 			timeout--;
 		}
@@ -311,7 +312,7 @@ int8_t getByte(void)
 
 int getPacket(void)
 {
-	static uint8_t state = 0; // 0: waiting for 0x26, 1: waiting for control byte
+	static uint8_t state = 0; 					// 0: waiting for 0x26, 1: waiting for control byte
 	int8_t receivedByte = getByte();
 
 	if (receivedByte != -1)
@@ -334,13 +335,13 @@ int getPacket(void)
 				if ((currentTemp >= 15) || (currentTemp <= 30))
 				{
 					// UART input only valid if temp between 15 and 30
-					lightButton.output = (controlByte >> 5) & 0x01; // a - bit 5: Light Output
-					isHeaterOn = (controlByte >> 4) & 0x01; // b - bit 4: Heater Output
-					isCoolingOn = (controlByte >> 3) & 0x01; // c - bit 3: Cooling Output
-					fanButton.output = (controlByte >> 2) & 0x01; // d - bit 2: Fan Output
+					lightButton.output = (controlByte >> 5) & 0x01; 		// a - bit 5: Light Output
+					isHeaterOn = (controlByte >> 4) & 0x01; 						// b - bit 4: Heater Output
+					isCoolingOn = (controlByte >> 3) & 0x01; 						// c - bit 3: Cooling Output
+					fanButton.output = (controlByte >> 2) & 0x01; 			// d - bit 2: Fan Output
 
 					state = 0;
-					return 1; // packet successfully processed
+					return 1; 			// packet successfully processed
 				}
 				else
 				{
@@ -362,7 +363,7 @@ int getPacket(void)
 void fanLightLogic(uint8_t lightSensor)
 {
 	// Fan control
-	if (fanButton.output == 0)	// Fan is switched off
+	if (fanButton.output == 0)					// Fan is switched off
 	{
 		if (fanControl == false)
 		{
@@ -370,7 +371,7 @@ void fanLightLogic(uint8_t lightSensor)
 			fan_lockout = 0;
 			fanControl = true;
 		}
-		else if (fanControl == true)	// Fan is in manual control
+		else if (fanControl == true)			// Fan is in manual control
 		{
 			if (fan_lockout >= 10000)
 			{
@@ -399,11 +400,11 @@ void fanLightLogic(uint8_t lightSensor)
 	
 }
 
-void tempControl()
+void tempControl(void)
 {
 	if (autoControl == true)
 	{
-		if (fanControl == false)	// If fan off manual overridde is not on
+		if (fanControl == false)			// If fan off manual overridde is not on
 		{
 			if (currentTemp < 22)
 			{
@@ -454,9 +455,9 @@ void tempControl()
 	}
 }
 
-void ledControl()
+void ledControl(void)
 {
-	if (fanButton.output == 1)	// Fan control output - PB1
+	if (fanButton.output == 1)				// Fan control output - PB1
 	{
 		GPIOB->ODR &= ~(GPIO_ODR_OD1);	// Active low
 	}
@@ -465,7 +466,7 @@ void ledControl()
 		GPIOB->ODR |= GPIO_ODR_OD1;
 	}
 	
-	if (lightButton.output == 1)	// Light control output - PA9
+	if (lightButton.output == 1)			// Light control output - PA9
 	{
 		GPIOA->ODR &= ~(GPIO_ODR_OD9);	// Active low
 	}
@@ -474,7 +475,7 @@ void ledControl()
 		GPIOA->ODR |= GPIO_ODR_OD9;
 	}
 	
-	if (isHeaterOn == true)	// Heater output - PF8
+	if (isHeaterOn == true)						// Heater output - PF8
 	{
 		GPIOF->ODR &= ~(GPIO_ODR_OD8);	// Active low
 	}
@@ -483,7 +484,7 @@ void ledControl()
 		GPIOF->ODR |= GPIO_ODR_OD8;
 	}
 	
-	if (isCoolingOn == true)	// Cooler output - PB8
+	if (isCoolingOn == true)					// Cooler output - PB8
 	{
 		GPIOB->ODR &= ~(GPIO_ODR_OD8);	// Active low
 	}
