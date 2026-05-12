@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "main.h"
 
-#define OUTGOING_PACKET_LENGTH_BYTES 5
+#define OUTGOING_PACKET_LENGTH_BYTES 14
 #define INCOMING_PACKET_LENGTH_BYTES 2
 
 uint16_t sample_ADC(void);
@@ -265,7 +265,7 @@ uint8_t* construct_packet(void)
 	snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
 
 	// Copy temperature string into packet
-	for (uint8_t i = 0; i < 8; i++) {
+	for (uint8_t i = 0; i < 6; i++) {
 		packet[index++] = (uint8_t)tempBuffer[i];
 	}
 
@@ -278,7 +278,9 @@ uint8_t* construct_packet(void)
 	packet[index++] = (uint8_t)(isCoolingOn); 									// 1 is cooling is on, 0 otherwise
 	packet[index++] = (uint8_t)((bool)fanButton.output);				// 1 is fan is on, 0 otherwise
 	packet[index++] = 0x00; 																		// 0
-	packet[index] = 0x01; 																			// 1
+	packet[index++] = 0x01; 																			// 1
+	packet[index++] = 0x0D;
+	packet[index] = 0x0A;
 
 	return packet;
 }
@@ -332,7 +334,7 @@ int getPacket(void)
 			// Bits 7-6 must be 01, and bits 1-0 must be 10.
 			if ((controlByte & 0xC3) == 0x42) // 0xC3 = 0b11000011, 0x42 = 0b01000010
 			{
-				if ((currentTemp >= 15) || (currentTemp <= 30))
+				if ((currentTemp >= 15) && (currentTemp <= 30))
 				{
 					// UART input only valid if temp between 15 and 30
 					lightButton.output = (controlByte >> 5) & 0x01; 		// a - bit 5: Light Output
@@ -392,12 +394,6 @@ void fanLightLogic(uint8_t lightSensor)
 		// If light button is pressed and light sensor detects light then switch off light button
 		lightButton.output = 0;
 	}
-	else if ((lightButton.output == 1) && (lightSensor == 0))
-	{
-		// If light button is pressed and no light detected then allow button input to continue
-		lightButton.output = 1;
-	}
-	
 }
 
 void tempControl(void)
