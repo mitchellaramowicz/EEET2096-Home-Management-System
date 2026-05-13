@@ -2307,14 +2307,14 @@ void delay_software_us(uint32_t);
 # 10 "./inc\\main.h" 2
 
 
-void RCC_init();
-void LED_GPIO_config();
-void Input_GPIO_config();
-void ADC_config();
-void UART_config();
-void timer6_config();
+void RCC_init(void);
+void LED_GPIO_config(void);
+void Input_GPIO_config(void);
+void ADC_config(void);
+void UART_config(void);
+void timer6_config(void);
 
-void RCC_init()
+void RCC_init(void)
 {
 
 
@@ -2352,7 +2352,7 @@ void RCC_init()
 
 }
 
-void LED_GPIO_config()
+void LED_GPIO_config(void)
 {
 
 
@@ -2397,7 +2397,7 @@ void LED_GPIO_config()
  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x1400U))->ODR |= (0x1U << (8U));
 }
 
-void Input_GPIO_config()
+void Input_GPIO_config(void)
 {
 
 
@@ -2432,9 +2432,14 @@ void Input_GPIO_config()
  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->PUPDR &= ~(0x03 << (0U));
  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x1400U))->PUPDR &= ~(0x03 << (20U));
 
+ ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->PUPDR |= (0x01 << (16U));
+ ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->PUPDR |= (0x01 << (20U));
+ ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->PUPDR |= (0x01 << (0U));
+ ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x1400U))->PUPDR |= (0x01 << (20U));
+
 }
 
-void ADC_config()
+void ADC_config(void)
 {
 
 
@@ -2463,7 +2468,7 @@ void ADC_config()
 }
 
 
-void UART_config()
+void UART_config(void)
 {
 
  ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->MODER &= ~((0x3U << (22U)) | (0x3U << (20U)));
@@ -2506,7 +2511,7 @@ void UART_config()
 
 }
 
-void timer6_config()
+void timer6_config(void)
 {
 
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->CR1 &= ~(0x1U << (0U));
@@ -2545,29 +2550,29 @@ struct Button
 
 
 
-
-uint16_t sample_ADC();
+uint16_t sample_ADC(void);
 float adc_to_temp(uint16_t value);
 void debounce(struct Button *button, uint8_t input);
 uint8_t* construct_packet(void);
 void send_data(void);
 int getPacket(void);
 
-struct Button fanButton;
-struct Button lightButton;
+static struct Button fanButton;
+static struct Button lightButton;
 
-_Bool isHeaterOn = 0;
-_Bool isCoolingOn = 0;
-volatile double currentTemp = 0;
-volatile uint32_t ms_counter = 0;
+static _Bool isHeaterOn = 0;
+static _Bool isCoolingOn = 0;
+static volatile float currentTemp = 0;
+static volatile uint32_t ms_counter = 0;
 
-_Bool autoControl = 1;
-_Bool fanControl = 0;
-uint32_t auto_lockout = 0;
-uint32_t fan_lockout = 0;
+static _Bool autoControl = 1;
+static _Bool fanControl = 0;
+static uint32_t auto_lockout = 0;
+static uint32_t fan_lockout = 0;
+
 void fanLightLogic(uint8_t lightSensor);
-void tempControl();
-void ledControl();
+void tempControl(void);
+void ledControl(void);
 # 49 "src/main.c"
 int main(void)
 {
@@ -2589,6 +2594,7 @@ int main(void)
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->CR1 |= (0x1U << (0U));
 
  fanButton.output = 1;
+ lightButton.output = 0;
 
   while (1)
   {
@@ -2596,8 +2602,8 @@ int main(void)
   currentTemp = adc_to_temp(sample_ADC());
 
 
-  volatile uint8_t fanInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->IDR & (0x1U << (0U));
-  volatile uint8_t lightInput = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (10U));
+  volatile uint8_t fanInput = (((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0400U))->IDR >> (0U)) & 0x01;
+  volatile uint8_t lightInput = (((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR >> (10U)) & 0x01 ;
 
   if (autoControl == 1)
   {
@@ -2610,9 +2616,7 @@ int main(void)
 
    debounce(&lightButton, lightInput);
   }
-
-
-
+# 102 "src/main.c"
   if (ms_counter >= 4000)
   {
    ms_counter = 0;
@@ -2620,7 +2624,7 @@ int main(void)
   }
 
 
-  volatile uint8_t lightIntensity = ((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR & (0x1U << (8U));
+  volatile uint8_t lightIntensity = (((GPIO_TypeDef *) ((0x40000000U + 0x00020000U) + 0x0000U))->IDR >> (8U)) & 0x01;
 
   fanLightLogic(lightIntensity);
 
@@ -2657,7 +2661,7 @@ int main(void)
 }
 
 
-void TIM6_DAC_IRQHandler()
+void TIM6_DAC_IRQHandler(void)
 {
 
  ((TIM_TypeDef *) (0x40000000U + 0x1000U))->SR &= ~(0x1U << (0U));
@@ -2759,12 +2763,12 @@ uint16_t sample_ADC()
 float adc_to_temp(uint16_t value)
 {
 
- return (55 - ((float)value)*(0.02075702076));
+ return (55.0f - ((float)value)*(0.02075702076f));
 }
 
 uint8_t* construct_packet(void)
 {
- static uint8_t packet[5];
+ static uint8_t packet[21];
  uint8_t index = 0;
  packet[index++] = 0x26;
  packet[index++] = 0x7E;
@@ -2777,7 +2781,7 @@ uint8_t* construct_packet(void)
  }
 
 
- double absTemp = currentTemp;
+ float absTemp = currentTemp;
  if (currentTemp < 0)
  {
   absTemp = -currentTemp;
@@ -2787,29 +2791,51 @@ uint8_t* construct_packet(void)
  snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
 
 
- for (uint8_t i = 0; i < 8; i++) {
+ for (uint8_t i = 0; i < 6; i++) {
   packet[index++] = (uint8_t)tempBuffer[i];
  }
 
- packet[index++] = 0x7E;
+ packet[index++] = 0x30;
+ packet[index++] = 0x31;
 
- packet[index++] = 0x00;
- packet[index++] = 0x01;
- packet[index++] = (uint8_t)((_Bool)lightButton.output);
- packet[index++] = (uint8_t)(isHeaterOn);
- packet[index++] = (uint8_t)(isCoolingOn);
- packet[index++] = (uint8_t)((_Bool)fanButton.output);
- packet[index++] = 0x00;
- packet[index] = 0x01;
+ if (lightButton.output == 0) {
+  packet[index++] = 0x30;
+ } else {
+  packet[index++] = 0x31;
+ }
+
+ if (isHeaterOn == 0) {
+  packet[index++] = 0x30;
+ } else {
+  packet[index++] = 0x31;
+ }
+
+ if (isCoolingOn == 0) {
+  packet[index++] = 0x30;
+ } else {
+  packet[index++] = 0x31;
+ }
+
+ if (fanButton.output == 0) {
+  packet[index++] = 0x30;
+ } else {
+  packet[index++] = 0x31;
+ }
+
+ packet[index++] = 0x30;
+ packet[index++] = 0x31;
+
+ packet[index++] = 0x0D;
+ packet[index] = 0x0A;
 
  return packet;
 }
 
-void send_data()
+void send_data(void)
 {
  uint8_t* packet = construct_packet();
 
- for (uint8_t i = 0; i < 5; i++) {
+ for (uint8_t i = 0; i < 21; i++) {
   uint32_t timeout = 10000;
   while ((((USART_TypeDef *) (0x40000000U + 0x4800U))->SR & (0x1U << (7U))) == 0 && timeout > 0) {
    timeout--;
@@ -2835,47 +2861,143 @@ int8_t getByte(void)
 int getPacket(void)
 {
  static uint8_t state = 0;
+ static uint8_t a, b, c, d;
  int8_t receivedByte = getByte();
+ uint8_t receivedDigit;
 
  if (receivedByte != -1)
  {
-  if (state == 0)
+
+  if ((receivedByte == 0x0D || receivedByte == 0x0A) && state != 9)
   {
-   if (receivedByte == 0x26)
-   {
-    state = 1;
-   }
+   state = 0;
+   return -1;
   }
-  else if (state == 1)
+
+  switch (state)
   {
-   uint8_t controlByte = (uint8_t)receivedByte;
-
-
-
-   if ((controlByte & 0xC3) == 0x42)
-   {
-    if ((currentTemp >= 15) || (currentTemp <= 30))
+   case 0:
+    if (receivedByte == '&')
     {
+     state = 1;
+    }
+    break;
 
-     lightButton.output = (controlByte >> 5) & 0x01;
-     isHeaterOn = (controlByte >> 4) & 0x01;
-     isCoolingOn = (controlByte >> 3) & 0x01;
-     fanButton.output = (controlByte >> 2) & 0x01;
-
-     state = 0;
-     return 1;
+   case 1:
+    if (receivedByte == 0)
+    {
+     state = 2;
     }
     else
     {
-
      state = 0;
     }
-   }
-   else
-   {
+    break;
 
+   case 2:
+    if (receivedByte == 1)
+    {
+     state = 3;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 3:
+    receivedDigit = (uint8_t)receivedByte;
+    if (receivedDigit == 0 || receivedDigit == 1)
+    {
+     a = receivedDigit;
+     state = 4;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 4:
+    receivedDigit = (uint8_t)receivedByte;
+    if (receivedDigit == 0 || receivedDigit == 1)
+    {
+     b = receivedDigit;
+     state = 5;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 5:
+    receivedDigit = (uint8_t)receivedByte;
+    if (receivedDigit == 0 || receivedDigit == 1)
+    {
+     c = receivedDigit;
+     state = 6;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 6:
+    receivedDigit = (uint8_t)receivedByte;
+    if (receivedDigit == 0 || receivedDigit == 1)
+    {
+     d = receivedDigit;
+     state = 7;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 7:
+    if (receivedByte == 0)
+    {
+     state = 8;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 8:
+    if (receivedByte == 0)
+    {
+     state = 9;
+    }
+    else
+    {
+     state = 0;
+    }
+    break;
+
+   case 9:
+    if (receivedByte == 0x0D || receivedByte == 0x0A)
+    {
+     if ((currentTemp >= 15) && (currentTemp <= 30))
+     {
+      lightButton.output = a;
+      isHeaterOn = b;
+      isCoolingOn = c;
+      fanButton.output = d;
+      state = 0;
+      return 1;
+     }
+    }
     state = 0;
-   }
+    break;
+
+   default:
+    state = 0;
+    break;
   }
  }
 
@@ -2909,20 +3031,14 @@ void fanLightLogic(uint8_t lightSensor)
  }
 
 
- if ((lightButton.output == 1) && (lightSensor == 1))
+ if ((lightButton.output == 1) && (lightSensor == 0))
  {
 
   lightButton.output = 0;
  }
- else if ((lightButton.output == 1) && (lightSensor == 0))
- {
-
-  lightButton.output = 1;
- }
-
 }
 
-void tempControl()
+void tempControl(void)
 {
  if (autoControl == 1)
  {
@@ -2977,7 +3093,7 @@ void tempControl()
  }
 }
 
-void ledControl()
+void ledControl(void)
 {
  if (fanButton.output == 1)
  {

@@ -66,6 +66,7 @@ int main(void)
 	TIM6->CR1 |= TIM_CR1_CEN;								// Enable Timer6
 	
 	fanButton.output = 1;										// Set fan to be on by default
+	lightButton.output = 0;									// Set light to be off by default
 
   while (1)
   {
@@ -73,8 +74,8 @@ int main(void)
 		currentTemp = adc_to_temp(sample_ADC());
 
 		// Poll Switches
-		volatile uint8_t fanInput = GPIOB->IDR & GPIO_IDR_ID0;				//Fan switch - PB0
-		volatile uint8_t lightInput = GPIOA->IDR & GPIO_IDR_ID10;		  //Light switch - PA10
+		volatile uint8_t fanInput = (GPIOB->IDR >> GPIO_IDR_ID0_Pos) & 0x01;					//Fan switch - PB0
+		volatile uint8_t lightInput = (GPIOA->IDR >> GPIO_IDR_ID10_Pos) & 0x01 ;		  //Light switch - PA10
 		
 		if (autoControl == true)
 		{
@@ -105,8 +106,8 @@ int main(void)
 		}
 
 		// Do stuff based on light and fan switch state
-		volatile uint8_t lightIntensity = GPIOA->IDR & GPIO_IDR_ID8;			// Light intensity sensor - PA8
-																																			// Maybe add hold functionality later
+		volatile uint8_t lightIntensity = (GPIOA->IDR >> GPIO_IDR_ID8_Pos) & 0x01;			// Light intensity sensor - PA8
+																																										// Maybe add hold functionality later
 		fanLightLogic(lightIntensity);
 
 		// Check UART
@@ -344,6 +345,7 @@ int getPacket(void)
 	static uint8_t state = 0;
 	static uint8_t a, b, c, d;
 	int8_t receivedByte = getByte();
+	uint8_t receivedDigit;
 
 	if (receivedByte != -1)
 	{
@@ -386,7 +388,7 @@ int getPacket(void)
 				break;
 
 			case 3: // Receiving 'a' (light output)
-				uint8_t receivedDigit = (uint8_t)receivedByte;
+				receivedDigit = (uint8_t)receivedByte;
 				if (receivedDigit == 0 || receivedDigit == 1)
 				{
 					a = receivedDigit;
@@ -399,7 +401,7 @@ int getPacket(void)
 				break;
 
 			case 4: // Receiving 'b' (heater output)
-				uint8_t receivedDigit = (uint8_t)receivedByte;
+				receivedDigit = (uint8_t)receivedByte;
 				if (receivedDigit == 0 || receivedDigit == 1)
 				{
 					b = receivedDigit;
@@ -412,7 +414,7 @@ int getPacket(void)
 				break;
 
 			case 5: // Receiving 'c' (cooling output)
-				uint8_t receivedDigit = (uint8_t)receivedByte;
+				receivedDigit = (uint8_t)receivedByte;
 				if (receivedDigit == 0 || receivedDigit == 1)
 				{
 					c = receivedDigit;
@@ -425,7 +427,7 @@ int getPacket(void)
 				break;
 
 			case 6: // Receiving 'd' (fan output)
-				uint8_t receivedDigit = (uint8_t)receivedByte;
+				receivedDigit = (uint8_t)receivedByte;
 				if (receivedDigit == 0 || receivedDigit == 1)
 				{
 					d = receivedDigit;
@@ -511,9 +513,9 @@ void fanLightLogic(uint8_t lightSensor)
 	}
 	
 	// Light control
-	if ((lightButton.output == 1) && (lightSensor == 1))
+	if ((lightButton.output == 1) && (lightSensor == 0))
 	{
-		// If light button is pressed and light sensor detects light then switch off light button
+		// If light button is pressed and light sensor detects light (active low) then switch off light button
 		lightButton.output = 0;
 	}
 }

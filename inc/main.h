@@ -134,6 +134,11 @@ void Input_GPIO_config(void)
 	GPIOB->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD0_Pos);
 	GPIOF->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD10_Pos);
 	
+	GPIOA->PUPDR |= (0x01 << GPIO_PUPDR_PUPD8_Pos);				// Set to pull-up
+	GPIOA->PUPDR |= (0x01 << GPIO_PUPDR_PUPD10_Pos);
+	GPIOB->PUPDR |= (0x01 << GPIO_PUPDR_PUPD0_Pos);
+	GPIOF->PUPDR |= (0x01 << GPIO_PUPDR_PUPD10_Pos);
+	
 }
 
 void ADC_config(void)
