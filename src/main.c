@@ -12,8 +12,7 @@
 #include <stdio.h>
 #include "main.h"
 
-#define OUTGOING_PACKET_LENGTH_BYTES 14
-#define INCOMING_PACKET_LENGTH_BYTES 2
+#define OUTGOING_PACKET_LENGTH_BYTES 21
 
 uint16_t sample_ADC(void);
 float adc_to_temp(uint16_t value);
@@ -88,8 +87,16 @@ int main(void)
 			// If not in auto control only let light button work if 1 sec passed else UART takes precedence
 			debounce(&lightButton, lightInput);
 		}
-		
 
+  		// FOR TESTING PURPOSES
+		/*
+		lightButton.output = 0;
+		isHeaterOn = false;
+		isCoolingOn = true;
+		fanButton.output = 1;
+		ms_counter = 4000;
+		*/
+		
   	// Send data to PC at 0.25 Hz
 		if (ms_counter >= 4000) // If 4000ms has elapsed, send data to PC
 		{
@@ -226,7 +233,7 @@ uint16_t sample_ADC()
 	ADC3->CR2 |= ADC_CR2_SWSTART;
 
 	// Wait for conversion to complete
-	while((ADC3->SR & ADC_SR_EOC) == 0x00);
+	while((ADC3->SR & ADC_SR_EOC) == 0x00); // COMMENT THIS OUT FOR TESTING
 
 	// Get value from ADC
 	current_ADC = (ADC3->DR & 0x0000FFFF);
@@ -268,20 +275,40 @@ uint8_t* construct_packet(void)
 	for (uint8_t i = 0; i < 6; i++) {
 		packet[index++] = (uint8_t)tempBuffer[i];
 	}
-
-	packet[index++] = 0x7E;																			// tilde delimiter
-
-	packet[index++] = 0x00; 																		// 0
-	packet[index++] = 0x01; 																		// 1
-	packet[index++] = (uint8_t)((bool)lightButton.output); 			// 1 is light is on, 0 otherwise
-	packet[index++] = (uint8_t)(isHeaterOn); 										// 1 is heater is on, 0 otherwise
-	packet[index++] = (uint8_t)(isCoolingOn); 									// 1 is cooling is on, 0 otherwise
-	packet[index++] = (uint8_t)((bool)fanButton.output);				// 1 is fan is on, 0 otherwise
-	packet[index++] = 0x00; 																		// 0
-	packet[index++] = 0x01; 																			// 1
+	
+	packet[index++] = 0x30;
+	packet[index++] = 0x31;
+	
+	if (lightButton.output == 0) {
+		packet[index++] = 0x30;
+	} else {
+		packet[index++] = 0x31;
+	}
+	
+	if (isHeaterOn == 0) {
+		packet[index++] = 0x30;
+	} else {
+		packet[index++] = 0x31;
+	}
+	
+	if (isCoolingOn == 0) {
+		packet[index++] = 0x30;
+	} else {
+		packet[index++] = 0x31;
+	}
+	
+	if (fanButton.output == 0) {
+		packet[index++] = 0x30;
+	} else {
+		packet[index++] = 0x31;
+	}
+	
+	packet[index++] = 0x30;
+	packet[index++] = 0x31;
+	
 	packet[index++] = 0x0D;
-	packet[index] = 0x0A;
-
+	packet[index]   = 0x0A;
+	
 	return packet;
 }
 
@@ -314,52 +341,147 @@ int8_t getByte(void)
 
 int getPacket(void)
 {
-	static uint8_t state = 0; 					// 0: waiting for 0x26, 1: waiting for control byte
+	static uint8_t state = 0;
+	static uint8_t a, b, c, d;
 	int8_t receivedByte = getByte();
 
 	if (receivedByte != -1)
 	{
-		if (state == 0)
+		// Error checking - discard packet if CR or LF is received unexpectedly
+		if ((receivedByte == 0x0D || receivedByte == 0x0A) && state != 9)
 		{
-			if (receivedByte == 0x26)
-			{
-				state = 1;
-			}
+			state = 0;
+			return -1;
 		}
-		else if (state == 1)
+
+		switch (state)
 		{
-			uint8_t controlByte = (uint8_t)receivedByte;
-
-			// Control byte format is 01abcd10
-			// Bits 7-6 must be 01, and bits 1-0 must be 10.
-			if ((controlByte & 0xC3) == 0x42) // 0xC3 = 0b11000011, 0x42 = 0b01000010
-			{
-				if ((currentTemp >= 15) && (currentTemp <= 30))
+			case 0: // Waiting for '&'
+				if (receivedByte == '&')
 				{
-					// UART input only valid if temp between 15 and 30
-					lightButton.output = (controlByte >> 5) & 0x01; 		// a - bit 5: Light Output
-					isHeaterOn = (controlByte >> 4) & 0x01; 						// b - bit 4: Heater Output
-					isCoolingOn = (controlByte >> 3) & 0x01; 						// c - bit 3: Cooling Output
-					fanButton.output = (controlByte >> 2) & 0x01; 			// d - bit 2: Fan Output
+					state = 1;
+				}
+				break;
 
-					state = 0;
-					return 1; 			// packet successfully processed
+			case 1: // Waiting for '0'
+				if (receivedByte == 0)
+				{
+					state = 2;
 				}
 				else
 				{
-					// discard packet
 					state = 0;
 				}
-			}
-			else
-			{
-				// discard packet
+				break;
+
+			case 2: // Waiting for '1'
+				if (receivedByte == 1)
+				{
+					state = 3;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 3: // Receiving 'a' (light output)
+				uint8_t receivedDigit = (uint8_t)receivedByte;
+				if (receivedDigit == 0 || receivedDigit == 1)
+				{
+					a = receivedDigit;
+					state = 4;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 4: // Receiving 'b' (heater output)
+				uint8_t receivedDigit = (uint8_t)receivedByte;
+				if (receivedDigit == 0 || receivedDigit == 1)
+				{
+					b = receivedDigit;
+					state = 5;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 5: // Receiving 'c' (cooling output)
+				uint8_t receivedDigit = (uint8_t)receivedByte;
+				if (receivedDigit == 0 || receivedDigit == 1)
+				{
+					c = receivedDigit;
+					state = 6;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 6: // Receiving 'd' (fan output)
+				uint8_t receivedDigit = (uint8_t)receivedByte;
+				if (receivedDigit == 0 || receivedDigit == 1)
+				{
+					d = receivedDigit;
+					state = 7;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 7: // Waiting for first '0'
+				if (receivedByte == 0)
+				{
+					state = 8;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 8: // Waiting for second '0'
+				if (receivedByte == 0)
+				{
+					state = 9;
+				}
+				else
+				{
+					state = 0;
+				}
+				break;
+
+			case 9: // Waiting for CR (0x0D) or LF (0x0A)
+				if (receivedByte == 0x0D || receivedByte == 0x0A)
+				{
+					if ((currentTemp >= 15) && (currentTemp <= 30))
+					{
+						lightButton.output = a;
+						isHeaterOn = b;
+						isCoolingOn = c;
+						fanButton.output = d;
+						state = 0;
+						return 1; // Successfully received packet
+					}
+				}
 				state = 0;
-			}
+				break;
+
+			default:
+				state = 0;
+				break;
 		}
 	}
 
-	return -1;
+	return -1; // No valid packet received yet
 }
 
 void fanLightLogic(uint8_t lightSensor)
