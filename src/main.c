@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "main.h"
 
-#define OUTGOING_PACKET_LENGTH_BYTES 21
+#define OUTGOING_PACKET_LENGTH_BYTES 19
 
 uint16_t sample_ADC(void);
 float adc_to_temp(uint16_t value);
@@ -252,8 +252,8 @@ uint8_t* construct_packet(void)
 {
 	static uint8_t packet[OUTGOING_PACKET_LENGTH_BYTES];
 	uint8_t index = 0;
-	packet[index++] = 0x26;
-	packet[index++] = 0x7E;
+	packet[index++] = '&';
+	packet[index++] = '~';
 
 	// Choose the sign for the temperature
 	char sign = '+';
@@ -276,39 +276,39 @@ uint8_t* construct_packet(void)
 	for (uint8_t i = 0; i < 6; i++) {
 		packet[index++] = (uint8_t)tempBuffer[i];
 	}
-	
-	packet[index++] = 0x30;
-	packet[index++] = 0x31;
+
+	packet[index++] = '~';
+	packet[index++] = '0';
+	packet[index++] = '1';
 	
 	if (lightButton.output == 0) {
-		packet[index++] = 0x30;
+		packet[index++] = '0';
 	} else {
-		packet[index++] = 0x31;
+		packet[index++] = '1';
 	}
 	
 	if (isHeaterOn == 0) {
-		packet[index++] = 0x30;
+		packet[index++] = '0';
 	} else {
-		packet[index++] = 0x31;
+		packet[index++] = '1';
 	}
 	
 	if (isCoolingOn == 0) {
-		packet[index++] = 0x30;
+		packet[index++] = '0';
 	} else {
-		packet[index++] = 0x31;
+		packet[index++] = '1';
 	}
 	
 	if (fanButton.output == 0) {
-		packet[index++] = 0x30;
+		packet[index++] = '0';
 	} else {
-		packet[index++] = 0x31;
+		packet[index++] = '1';
 	}
 	
-	packet[index++] = 0x30;
-	packet[index++] = 0x31;
-	
+	packet[index++] = '0';
+	packet[index++] = '1';
 	packet[index++] = 0x0D;
-	packet[index]   = 0x0A;
+	packet[index] = 0x0A;
 	
 	return packet;
 }
@@ -366,7 +366,7 @@ int getPacket(void)
 				break;
 
 			case 1: // Waiting for '0'
-				if (receivedByte == 0)
+				if (receivedByte == '0')
 				{
 					state = 2;
 				}
@@ -377,7 +377,7 @@ int getPacket(void)
 				break;
 
 			case 2: // Waiting for '1'
-				if (receivedByte == 1)
+				if (receivedByte == '1')
 				{
 					state = 3;
 				}
@@ -389,9 +389,9 @@ int getPacket(void)
 
 			case 3: // Receiving 'a' (light output)
 				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == 0 || receivedDigit == 1)
+				if (receivedDigit == '0' || receivedDigit == '1')
 				{
-					a = receivedDigit;
+					a = receivedDigit - '0';
 					state = 4;
 				}
 				else
@@ -402,9 +402,9 @@ int getPacket(void)
 
 			case 4: // Receiving 'b' (heater output)
 				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == 0 || receivedDigit == 1)
+				if (receivedDigit == '0' || receivedDigit == '1')
 				{
-					b = receivedDigit;
+					b = receivedDigit - '0';
 					state = 5;
 				}
 				else
@@ -415,9 +415,9 @@ int getPacket(void)
 
 			case 5: // Receiving 'c' (cooling output)
 				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == 0 || receivedDigit == 1)
+				if (receivedDigit == '0' || receivedDigit == '1')
 				{
-					c = receivedDigit;
+					c = receivedDigit - '0';
 					state = 6;
 				}
 				else
@@ -428,9 +428,9 @@ int getPacket(void)
 
 			case 6: // Receiving 'd' (fan output)
 				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == 0 || receivedDigit == 1)
+				if (receivedDigit == '0' || receivedDigit == '1')
 				{
-					d = receivedDigit;
+					d = receivedDigit - '0';
 					state = 7;
 				}
 				else
@@ -440,7 +440,7 @@ int getPacket(void)
 				break;
 
 			case 7: // Waiting for first '0'
-				if (receivedByte == 0)
+				if (receivedByte == '0')
 				{
 					state = 8;
 				}
@@ -451,7 +451,7 @@ int getPacket(void)
 				break;
 
 			case 8: // Waiting for second '0'
-				if (receivedByte == 0)
+				if (receivedByte == '0')
 				{
 					state = 9;
 				}
@@ -464,15 +464,12 @@ int getPacket(void)
 			case 9: // Waiting for CR (0x0D) or LF (0x0A)
 				if (receivedByte == 0x0D || receivedByte == 0x0A)
 				{
-					if ((currentTemp >= 15) && (currentTemp <= 30))
-					{
-						lightButton.output = a;
-						isHeaterOn = b;
-						isCoolingOn = c;
-						fanButton.output = d;
-						state = 0;
-						return 1; // Successfully received packet
-					}
+					lightButton.output = a;
+					isHeaterOn = b;
+					isCoolingOn = c;
+					fanButton.output = d;
+					state = 0;
+					return 1; // Successfully received packet
 				}
 				state = 0;
 				break;
