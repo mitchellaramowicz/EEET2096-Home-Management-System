@@ -10,16 +10,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "stm32f439xx.h"
 #include "main.h"
-
-#define OUTGOING_PACKET_LENGTH_BYTES 19
-
-uint16_t sample_ADC(void);
-float adc_to_temp(uint16_t value);
-void debounce(struct Button *button, uint8_t input);
-uint8_t* construct_packet(void);
-void send_data(void);
-int getPacket(void);
+#include "adc_handler.h"
+#include "button_handler.h"
+#include "uart_handler.h"
+#include "control.h"
 
 static struct Button fanButton;										//global button structs
 static struct Button lightButton;
@@ -33,12 +29,6 @@ static bool autoControl = true;										// True - heater/cooler/fan controlled 
 static bool fanControl = false;										// True - Fan in manual off control, False - Fan in auto control
 static uint32_t auto_lockout = 0;									// Timer for counting lockout time till auto override - max 10s
 static uint32_t fan_lockout = 0;									// Timer for counting fan lockout time till auto override - max 10s
-
-void fanLightLogic(uint8_t lightSensor);					// Handle fan and light switch logic
-void tempControl(void);														// Handle setting cooler/heater	based on temperature				
-void ledControl(void);														// Control LEDs based on current system settings
-
-
 
 //******************************************************************************//
 // Function: main()
@@ -71,7 +61,8 @@ int main(void)
   while (1)
   {
 		// Read ADC
-		currentTemp = adc_to_temp(sample_ADC());
+		currentTemp = adc_to_temp(sample_ADC()); // UNCOMMENT FOR PRODUCTION
+		// currentTemp = 20; // UNCOMMENT FOR SIMULATOR TESTING
 
 		// Poll Switches
 		volatile uint8_t fanInput = (GPIOB->IDR >> GPIO_IDR_ID0_Pos) & 0x01;					//Fan switch - PB0
@@ -80,38 +71,32 @@ int main(void)
 		if (autoControl == true)
 		{
 			// Allow fan button and light button to work when in auto control
-			debounce(&fanButton, fanInput);
-			debounce(&lightButton, lightInput);
+			button_process(&fanButton, fanInput);
+			button_process(&lightButton, lightInput);
 		}
-		else if ((autoControl == false) && (auto_lockout >= 1000))
+		else if (autoControl == false)
 		{
 			// If not in auto control only let light button work if 1 sec passed else UART takes precedence
-			debounce(&lightButton, lightInput);
+			if (auto_lockout >= 1000)
+			{
+				button_process(&lightButton, lightInput);
+			}
 		}
 
-  		// FOR TESTING PURPOSES
-		/*
-		lightButton.output = 0;
-		isHeaterOn = false;
-		isCoolingOn = true;
-		fanButton.output = 1;
-		ms_counter = 4000;
-		*/
-		
   	// Send data to PC at 0.25 Hz
 		if (ms_counter >= 4000) // If 4000ms has elapsed, send data to PC
 		{
 			ms_counter = 0;
-			send_data();
+			send_data(currentTemp, lightButton, isHeaterOn, isCoolingOn, fanButton);
 		}
 
 		// Do stuff based on light and fan switch state
 		volatile uint8_t lightIntensity = (GPIOA->IDR >> GPIO_IDR_ID8_Pos) & 0x01;			// Light intensity sensor - PA8
 																																										// Maybe add hold functionality later
-		fanLightLogic(lightIntensity);
+		fanLightLogic(&fanButton, &lightButton, &fanControl, &fan_lockout, lightIntensity);
 
 		// Check UART
-		if(getPacket() == 1)
+		if(getPacket(currentTemp, &lightButton, &isHeaterOn, &isCoolingOn, &fanButton) == 1)
 		{
 			// If successful packet received switch to UART controlled mode
 			autoControl = false;
@@ -131,10 +116,10 @@ int main(void)
 		}
 
 		// Temp control - control fan + heater setting based on temp only if in auto control
-		tempControl();
+		tempControl(autoControl, fanControl, currentTemp, &isHeaterOn, &isCoolingOn, &fanButton);
 
 		// Change LEDs based on settings
-		ledControl();
+		ledControl(fanButton, lightButton, isHeaterOn, isCoolingOn);
 
 		// Loop
 
@@ -163,450 +148,4 @@ void TIM6_DAC_IRQHandler(void)
 	ms_counter++;
 	
 	// No need to restart timer as it is in free-run mode
-}
-
-void debounce(struct Button *button, uint8_t input)
-{
-	switch (button->state)
-	{
-		case NO_INPUT:
-			// Detect falling edge - active low
-			if (button->prevInput == 1 && input == 0)
-			{
-				// If button pressed reset timer and switch to pressed mode
-				button->hold_time = 0;
-				button->state = PRESSED;
-			}
-
-			break;
-
-		case PRESSED:
-			// Detect rising edge
-			if (input == 1)
-			{
-				if (button->hold_time >= 10)
-				{
-					// If button has been released and 10 ms have passed change state
-					button->state = CONFIRM;
-				}
-				else
-				{
-					// If button is released and not enough time then disregard result
-					button->state = NO_INPUT;
-				}
-			}
-			break;
-
-		case CONFIRM:
-			// Reset lockout timer
-			button->lockout_time = 0;
-			button->state = LOCKOUT;
-
-			// Flip button output
-			if (button->output == 0)
-			{
-				button->output = 1;
-			}
-			else if (button->output == 1)
-			{
-				button->output = 0;
-			}
-			break;
-
-		case LOCKOUT:
-			// No input for 2s
-			if (button->lockout_time >=2000)
-			{
-				button->state = NO_INPUT;
-			}
-			break;
-	}
-	button->prevInput = input;
-
-}
-
-// Reads current ADC value
-uint16_t sample_ADC()
-{
-	uint16_t current_ADC = 0;
-
-	// Trigger and ADC conversion;
-	ADC3->CR2 |= ADC_CR2_SWSTART;
-
-	// Wait for conversion to complete
-	while((ADC3->SR & ADC_SR_EOC) == 0x00); // COMMENT THIS OUT FOR TESTING
-
-	// Get value from ADC
-	current_ADC = (ADC3->DR & 0x0000FFFF);
-	return current_ADC;
-}
-
-// Converts ADC value to temp value
-float adc_to_temp(uint16_t value)
-{
-	//return (55 - ((float)value)*(85/4095));
-	return (55.0f - ((float)value)*(0.02075702076f));
-}
-
-uint8_t* construct_packet(void)
-{
-	static uint8_t packet[OUTGOING_PACKET_LENGTH_BYTES];
-	uint8_t index = 0;
-	packet[index++] = '&';
-	packet[index++] = '~';
-
-	// Choose the sign for the temperature
-	char sign = '+';
-	if (currentTemp < 0)
-	{
-		sign = '-';
-	}
-
-	// Get the absolute value of the temperature
-	float absTemp = currentTemp;
-	if (currentTemp < 0)
-	{
-		absTemp = -currentTemp;
-	}
-
-	char tempBuffer[8]; // Set up temporary buffer for temperature string
-	snprintf(tempBuffer, sizeof(tempBuffer), "%c%05.2f", sign, absTemp);
-
-	// Copy temperature string into packet
-	for (uint8_t i = 0; i < 6; i++) {
-		packet[index++] = (uint8_t)tempBuffer[i];
-	}
-
-	packet[index++] = '~';
-	packet[index++] = '0';
-	packet[index++] = '1';
-	
-	if (lightButton.output == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	if (isHeaterOn == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	if (isCoolingOn == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	if (fanButton.output == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	packet[index++] = '0';
-	packet[index++] = '1';
-	packet[index++] = 0x0D;
-	packet[index] = 0x0A;
-	
-	return packet;
-}
-
-void send_data(void)
-{
-	uint8_t* packet = construct_packet();
-
-	for (uint8_t i = 0; i < OUTGOING_PACKET_LENGTH_BYTES; i++) {
-		uint32_t timeout = 10000; 																	// idk if this is the right timeout value
-		while ((USART3->SR & USART_SR_TXE) == 0 && timeout > 0) {
-			timeout--;
-		}
-		if (timeout > 0) {
-			USART3->DR = packet[i];
-		}
-	}
-}
-
-int8_t getByte(void)
-{
-	int8_t receivedByte = -1;
-
-	if (USART3->SR & USART_SR_RXNE)
-	{
-		receivedByte = USART3->DR;
-	}
-
-	return receivedByte;
-}
-
-int getPacket(void)
-{
-	static uint8_t state = 0;
-	static uint8_t a, b, c, d;
-	int8_t receivedByte = getByte();
-	uint8_t receivedDigit;
-
-	if (receivedByte != -1)
-	{
-		// Error checking - discard packet if CR or LF is received unexpectedly
-		if ((receivedByte == 0x0D || receivedByte == 0x0A) && state != 9)
-		{
-			state = 0;
-			return -1;
-		}
-
-		switch (state)
-		{
-			case 0: // Waiting for '&'
-				if (receivedByte == '&')
-				{
-					state = 1;
-				}
-				break;
-
-			case 1: // Waiting for '0'
-				if (receivedByte == '0')
-				{
-					state = 2;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 2: // Waiting for '1'
-				if (receivedByte == '1')
-				{
-					state = 3;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 3: // Receiving 'a' (light output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					a = receivedDigit - '0';
-					state = 4;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 4: // Receiving 'b' (heater output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					b = receivedDigit - '0';
-					state = 5;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 5: // Receiving 'c' (cooling output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					c = receivedDigit - '0';
-					state = 6;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 6: // Receiving 'd' (fan output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					d = receivedDigit - '0';
-					state = 7;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 7: // Waiting for first '0'
-				if (receivedByte == '0')
-				{
-					state = 8;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 8: // Waiting for second '0'
-				if (receivedByte == '0')
-				{
-					state = 9;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 9: // Waiting for CR (0x0D) or LF (0x0A)
-				if (receivedByte == 0x0D || receivedByte == 0x0A)
-				{
-					lightButton.output = a;
-					isHeaterOn = b;
-					isCoolingOn = c;
-					fanButton.output = d;
-					state = 0;
-					return 1; // Successfully received packet
-				}
-				state = 0;
-				break;
-
-			default:
-				state = 0;
-				break;
-		}
-	}
-
-	return -1; // No valid packet received yet
-}
-
-void fanLightLogic(uint8_t lightSensor)
-{
-	// Fan control
-	if (fanButton.output == 0)					// Fan is switched off
-	{
-		if (fanControl == false)
-		{
-			// If fan has been switched off for the first time enable 10s countdown and manual control
-			fan_lockout = 0;
-			fanControl = true;
-		}
-		else if (fanControl == true)			// Fan is in manual control
-		{
-			if (fan_lockout >= 10000)
-			{
-				// If 10s passed turn fan back on and turn off manual control
-				fanControl = false;
-				fanButton.output = 1;
-			}
-		}
-	}
-	else
-	{
-		fanControl = false;
-	}
-	
-	// Light control
-	if ((lightButton.output == 1) && (lightSensor == 0))
-	{
-		// If light button is pressed and light sensor detects light (active low) then switch off light button
-		lightButton.output = 0;
-	}
-}
-
-void tempControl(void)
-{
-	if (autoControl == true)
-	{
-		if (fanControl == false)			// If fan off manual overridde is not on
-		{
-			if (currentTemp < 22)
-			{
-				// If temp less then 22, heater + fan ON
-				isHeaterOn = true;
-				isCoolingOn = false;
-				fanButton.output = 1;
-			}
-			else if (currentTemp > 24)
-			{
-				// If temp more then 24, cooler + fan ON
-				isHeaterOn = false;
-				isCoolingOn = true;
-				fanButton.output = 1;
-			}
-			else
-			{
-				// Else in hysteresis band, heater + cooler OFF, fan ON
-				isHeaterOn = false;
-				isCoolingOn = false;
-				fanButton.output = 1;
-			}
-		}
-		else if (fanControl == true)	// If fan off manual overridde is on
-		{
-			if (currentTemp < 22)
-			{
-				// If temp less then 22, heater ON + fan OFF
-				isHeaterOn = true;
-				isCoolingOn = false;
-				fanButton.output = 0;
-			}
-			else if (currentTemp > 24)
-			{
-				// If temp more then 24, cooler ON + fan OFF
-				isHeaterOn = false;
-				isCoolingOn = true;
-				fanButton.output = 0;
-			}
-			else
-			{
-				// Else in hysteresis band, heater + cooler OFF, fan OFF
-				isHeaterOn = false;
-				isCoolingOn = false;
-				fanButton.output = 0;
-			}
-		}
-	}
-}
-
-void ledControl(void)
-{
-	if (fanButton.output == 1)				// Fan control output - PB1
-	{
-		GPIOB->ODR &= ~(GPIO_ODR_OD1);	// Active low
-	}
-	else
-	{
-		GPIOB->ODR |= GPIO_ODR_OD1;
-	}
-	
-	if (lightButton.output == 1)			// Light control output - PA9
-	{
-		GPIOA->ODR &= ~(GPIO_ODR_OD9);	// Active low
-	}
-	else
-	{
-		GPIOA->ODR |= GPIO_ODR_OD9;
-	}
-	
-	if (isHeaterOn == true)						// Heater output - PF8
-	{
-		GPIOF->ODR &= ~(GPIO_ODR_OD8);	// Active low
-	}
-	else
-	{
-		GPIOF->ODR |= GPIO_ODR_OD8;
-	}
-	
-	if (isCoolingOn == true)					// Cooler output - PB8
-	{
-		GPIOB->ODR &= ~(GPIO_ODR_OD8);	// Active low
-	}
-	else
-	{
-		GPIOB->ODR |= GPIO_ODR_OD8;
-	}
 }
