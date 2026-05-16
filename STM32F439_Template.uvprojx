@@ -473,6 +473,31 @@
               <FileType>1</FileType>
               <FilePath>.\src\gpioControl.c</FilePath>
             </File>
+            <File>
+              <FileName>adc_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\adc_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>button_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\button_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\control.c</FilePath>
+            </File>
+            <File>
+              <FileName>setup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\setup.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\uart_handler.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1011,6 +1036,31 @@
               <FileName>gpioControl.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\gpioControl.c</FilePath>
+            </File>
+            <File>
+              <FileName>adc_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\adc_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>button_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\button_handler.c</FilePath>
+            </File>
+            <File>
+              <FileName>control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\control.c</FilePath>
+            </File>
+            <File>
+              <FileName>setup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\setup.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart_handler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\uart_handler.c</FilePath>
             </File>
           </Files>
         </Group>
