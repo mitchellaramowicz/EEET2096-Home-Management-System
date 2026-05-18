@@ -1,2 +1,21 @@
-.idea/
-.DS_Store
+# Ignore everything
+*
+
+# But allow directories so we can selectively re-include files
+!*/
+
+# Keep root-level allowed files
+!/.gitignore
+!/README.md
+!/*.uvprojx
+!/*.uvoptx
+
+# Allow specific folders
+!/src/
+!/inc/
+
+# Include only .c files in src/
+!/src/*.c
+
+# Include only .h files in inc/
+!/inc/*.h
