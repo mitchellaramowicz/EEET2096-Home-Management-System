@@ -34,35 +34,16 @@ uint8_t* construct_packet(float currentTemp, struct Button lightButton, bool isH
 	}
 
 	packet[index++] = '~';
-	packet[index++] = '0';
-	packet[index++] = '1';
 	
-	if (lightButton.output == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
+	// Pack status bits into a single byte: 01abcd01
+	uint8_t statusByte = 0x41; // 01000001
+	if (lightButton.output != 0) statusByte |= (1 << 5);	// a
+	if (isHeaterOn)               statusByte |= (1 << 4);	// b
+	if (isCoolingOn)              statusByte |= (1 << 3);	// c
+	if (fanButton.output != 0)   statusByte |= (1 << 2);	// d
 	
-	if (isHeaterOn == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
+	packet[index++] = statusByte;
 	
-	if (isCoolingOn == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	if (fanButton.output == 0) {
-		packet[index++] = '0';
-	} else {
-		packet[index++] = '1';
-	}
-	
-	packet[index++] = '0';
-	packet[index++] = '1';
 	packet[index++] = 0x0D;
 	packet[index] = 0x0A;
 	
@@ -101,12 +82,11 @@ int getPacket(float currentTemp, struct Button *lightButton, bool *isHeaterOn, b
 	static uint8_t state = 0;
 	static uint8_t a, b, c, d;
 	int8_t receivedByte = getByte();
-	uint8_t receivedDigit;
 
 	if (receivedByte != -1)
 	{
 		// Error checking - discard packet if CR or LF is received unexpectedly
-		if ((receivedByte == 0x0D || receivedByte == 0x0A) && state != 9)
+		if ((receivedByte == 0x0D || receivedByte == 0x0A) && state != 2)
 		{
 			state = 0;
 			return -1;
@@ -121,9 +101,13 @@ int getPacket(float currentTemp, struct Button *lightButton, bool *isHeaterOn, b
 				}
 				break;
 
-			case 1: // Waiting for '0'
-				if (receivedByte == '0')
+			case 1: // Waiting for status byte
+				if ((receivedByte & 0xC3) == 0x40) // Check if format is 01abcd00
 				{
+					a = (receivedByte >> 5) & 0x01;
+					b = (receivedByte >> 4) & 0x01;
+					c = (receivedByte >> 3) & 0x01;
+					d = (receivedByte >> 2) & 0x01;
 					state = 2;
 				}
 				else
@@ -132,92 +116,7 @@ int getPacket(float currentTemp, struct Button *lightButton, bool *isHeaterOn, b
 				}
 				break;
 
-			case 2: // Waiting for '1'
-				if (receivedByte == '1')
-				{
-					state = 3;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 3: // Receiving 'a' (light output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					a = receivedDigit - '0';
-					state = 4;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 4: // Receiving 'b' (heater output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					b = receivedDigit - '0';
-					state = 5;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 5: // Receiving 'c' (cooling output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					c = receivedDigit - '0';
-					state = 6;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 6: // Receiving 'd' (fan output)
-				receivedDigit = (uint8_t)receivedByte;
-				if (receivedDigit == '0' || receivedDigit == '1')
-				{
-					d = receivedDigit - '0';
-					state = 7;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 7: // Waiting for first '0'
-				if (receivedByte == '0')
-				{
-					state = 8;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 8: // Waiting for second '0'
-				if (receivedByte == '0')
-				{
-					state = 9;
-				}
-				else
-				{
-					state = 0;
-				}
-				break;
-
-			case 9: // Waiting for CR (0x0D) or LF (0x0A)
+			case 2: // Waiting for CR (0x0D) or LF (0x0A)
 				if (receivedByte == 0x0D || receivedByte == 0x0A)
 				{
 					lightButton->output = a;
