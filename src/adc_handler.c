@@ -1,9 +1,24 @@
+/****************************************************
+*			STM32F439 ADC Logic Handler  									*
+*			Developed for the STM32												*
+*			Author: Justin Nguyen													*
+*			Source File																		*
+*     Updated: 28/05/2026 	  											*
+*****************************************************/
+
 #include "adc_handler.h"
 #include "stm32f439xx.h"
 #include <stdint.h>
 
-// Reads current ADC value
-uint16_t sample_ADC()
+//******************************************************************************//
+// Function: sample_ADC()
+// Input: None
+// Return: uint16_t - ADC sample result
+// Description: Triggers an ADC conversion and waits for completion to return 
+//               the 12-bit digital value.
+// Author: Justin Nguyen
+// *****************************************************************************//
+uint16_t sample_ADC(void)
 {
 	uint16_t current_ADC = 0;
 
@@ -15,12 +30,19 @@ uint16_t sample_ADC()
 
 	// Get value from ADC
 	current_ADC = (ADC3->DR & 0x0000FFFF);
+	
 	return current_ADC;
 }
 
-// Converts ADC value to temp value
+//******************************************************************************//
+// Function: adc_to_temp()
+// Input: uint16_t - raw ADC value
+// Return: float - The current temperature in degrees Celsius
+// Description: Converts the 12-bit ADC value to a temperature value.
+// Author: Justin Nguyen
+// *****************************************************************************//
 float adc_to_temp(uint16_t value)
 {
-	//return (55 - ((float)value)*(85/4095));
+	// Temperature = (55 - ((float)value) * (85/4095));
 	return (55.0f - ((float)value)*(0.02075702076f));
 }

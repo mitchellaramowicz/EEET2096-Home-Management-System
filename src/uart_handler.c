@@ -1,9 +1,30 @@
+/****************************************************
+*			STM32F439 UART Logic Handler  								*
+*			Developed for the STM32												*
+*			Author: Mitchell Aramowicz										*
+*			Source File																		*
+*     Updated: 28/05/2026 	  											*
+*****************************************************/
+
 #include "uart_handler.h"
 #include "stm32f439xx.h"
+#include "main.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
+//******************************************************************************//
+// Function: construct_packet()
+// Input: float currentTemp - current temperature, 
+//        struct Button lightButton - light button status, 
+//        bool isHeaterOn - heater status, 
+//        bool isCoolingOn - cooler status, 
+//        struct Button fanButton - fan button status
+// Return: uint8_t* - pointer to the constructed packet buffer
+// Description: Constructs a data packet for UART transmission containing 
+//              temperature and device status.
+// Author: Mitchell Aramowicz
+// *****************************************************************************//
 uint8_t* construct_packet(float currentTemp, struct Button lightButton, bool isHeaterOn, bool isCoolingOn, struct Button fanButton)
 {
 	static uint8_t packet[OUTGOING_PACKET_LENGTH_BYTES];
@@ -50,21 +71,38 @@ uint8_t* construct_packet(float currentTemp, struct Button lightButton, bool isH
 	return packet;
 }
 
+//******************************************************************************//
+// Function: send_data()
+// Input: float currentTemp - current temperature, 
+//        struct Button lightButton - light button status, 
+//        bool isHeaterOn - heater status, 
+//        bool isCoolingOn - cooler status, 
+//        struct Button fanButton - fan button status
+// Return: None
+// Description: Constructs and transmits a status packet over USART3.
+// Author: Mitchell Aramowicz
+// *****************************************************************************//
 void send_data(float currentTemp, struct Button lightButton, bool isHeaterOn, bool isCoolingOn, struct Button fanButton)
 {
 	uint8_t* packet = construct_packet(currentTemp, lightButton, isHeaterOn, isCoolingOn, fanButton);
 
 	for (uint8_t i = 0; i < OUTGOING_PACKET_LENGTH_BYTES; i++) {
-		uint32_t timeout = 10000;	// idk if this is the right timeout value also make this a hardware timer
-		while ((USART3->SR & USART_SR_TXE) == 0 && timeout > 0) {
-			timeout--;
-		}
-		if (timeout > 0) {
+		uint32_t startTime = ms_counter;
+		while ((USART3->SR & USART_SR_TXE) == 0 && (ms_counter - startTime) < 1000);
+
+		if ((USART3->SR & USART_SR_TXE) != 0) {
 			USART3->DR = packet[i];
 		}
 	}
 }
 
+//******************************************************************************//
+// Function: getByte()
+// Input: None
+// Return: int8_t - the received byte, or -1 if no byte is available
+// Description: Non-blocking check for a received byte on USART3.
+// Author: Mitchell Aramowicz
+// *****************************************************************************//
 int8_t getByte(void)
 {
 	int8_t receivedByte = -1;
@@ -77,6 +115,18 @@ int8_t getByte(void)
 	return receivedByte;
 }
 
+//******************************************************************************//
+// Function: getPacket()
+// Input: float currentTemp - current temperature, 
+//        struct Button *lightButton - pointer to light button struct, 
+//        bool *isHeaterOn - pointer to heater status, 
+//        bool *isCoolingOn - pointer to cooler status, 
+//        struct Button *fanButton - pointer to fan button struct
+// Return: int - 1 if a full packet was processed, -1 otherwise
+// Description: Processes incoming UART bytes to reconstruct a control packet 
+//              and update application state.
+// Author: Mitchell Aramowicz
+// *****************************************************************************//
 int getPacket(float currentTemp, struct Button *lightButton, bool *isHeaterOn, bool *isCoolingOn, struct Button *fanButton)
 {
 	static uint8_t state = 0;

@@ -1,7 +1,23 @@
+/****************************************************
+*			STM32F439 Setup Configuration  							*
+*			Developed for the STM32												*
+*			Authors: Justin Nguyen, Mitchell Aramowicz													*
+*			Source File																		*
+*     Updated: 28/05/2026 	  											*
+*****************************************************/
+
 #include "main.h"
 #include "stm32f439xx.h"
 
-void RCC_init(void)
+//******************************************************************************//
+// Function: RCC_Config()
+// Input: None
+// Return: None
+// Description: Configures the Reset and Clock Control (RCC) for various 
+//              peripherals including GPIO ports, timers, UART, and ADC.
+// Author: Justin Nguyen
+// *****************************************************************************//
+void RCC_Config(void)
 {
 	
 	// Enable GPIOA, GPIOB and GPIOF
@@ -39,7 +55,15 @@ void RCC_init(void)
 	
 }
 
-void LED_GPIO_config(void)
+//******************************************************************************//
+// Function: LED_GPIO_Config()
+// Input: None
+// Return: None
+// Description: Configures GPIO pins for the onboard LEDs as outputs.
+// Author: Justin Nguyen
+// Edited By: Mitchell Aramowicz
+// *****************************************************************************//
+void LED_GPIO_Config(void)
 {
 	// Configure LED2, 5, 6 and 7 for output
 	// Clear MODER bits
@@ -66,22 +90,21 @@ void LED_GPIO_config(void)
 	GPIOB->OSPEEDR &= ~(0x03 << GPIO_OSPEEDR_OSPEED8_Pos);
 	GPIOF->OSPEEDR &= ~(0x03 << GPIO_OSPEEDR_OSPEED8_Pos);
 	
-	// Set ODR to clear LED
-	GPIOA->ODR |= GPIO_ODR_OD9;	// Set bit to 1
-	GPIOB->ODR |= GPIO_ODR_OD1;
-	GPIOB->ODR |= GPIO_ODR_OD8;
-	GPIOF->ODR |= GPIO_ODR_OD8;
-	
 	GPIOA->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED9_Pos);	// Set to medium speed (0b01)
 	GPIOB->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED1_Pos);
 	GPIOB->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED8_Pos);
 	GPIOF->OSPEEDR |= (0x01 << GPIO_OSPEEDR_OSPEED8_Pos);
 	
-	// Clear PUPDR reg
+	// Set to be Pull-Up
 	GPIOA->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD9_Pos);	// Clear bits
 	GPIOB->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD1_Pos);
 	GPIOB->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD8_Pos);
 	GPIOF->PUPDR &= ~(0x03 << GPIO_PUPDR_PUPD8_Pos);
+
+	GPIOA->PUPDR |= ~(0x01 << GPIO_PUPDR_PUPD9_Pos);	// Set to Pull-Up (01)
+	GPIOB->PUPDR |= ~(0x01 << GPIO_PUPDR_PUPD1_Pos);
+	GPIOB->PUPDR |= ~(0x01 << GPIO_PUPDR_PUPD8_Pos);
+	GPIOF->PUPDR |= ~(0x01 << GPIO_PUPDR_PUPD8_Pos);
 	
 	// Set ODR to clear LED
 	GPIOA->ODR |= GPIO_ODR_OD9;	// Set bit to 1
@@ -90,7 +113,16 @@ void LED_GPIO_config(void)
 	GPIOF->ODR |= GPIO_ODR_OD8;
 }
 
-void Input_GPIO_config(void)
+//******************************************************************************//
+// Function: Input_GPIO_Config()
+// Input: None
+// Return: None
+// Description: Configures GPIO pins for inputs such as buttons, sensors, 
+//              and alternate functions like UART.
+// Author: Justin Nguyen
+// Edited By: Mitchell Aramowicz
+// *****************************************************************************//
+void Input_GPIO_Config(void)
 {
 	// Configure GPIO inputs
 	// Clear MODER bits	/ Enable as input mode
@@ -100,13 +132,15 @@ void Input_GPIO_config(void)
 	GPIOF->MODER &= ~(GPIO_MODER_MODE10_Msk);	// Clear modder bits for GPIOF_10
 	
 	// Enable PF10 as analogue mode
-	GPIOF->MODER |= 0x03 << GPIO_MODER_MODE10_Pos;	// Enable PF8 as analogue (0b11)
-	
-	// Enable push-pull output - does not affect input mode
-	GPIOA->OTYPER &= ~(GPIO_OTYPER_OT8);	//Clear bit 8
-	GPIOA->OTYPER &= ~(GPIO_OTYPER_OT10);	//Clear bit 10
-	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT8);	//Clear bit 0
-	GPIOF->OTYPER &= ~(GPIO_OTYPER_OT10);	//Clear bit 10
+	GPIOF->MODER |= 0x03 << GPIO_MODER_MODE10_Pos;	// Enable PF10 as analogue (0b11)
+
+	// Set PB10 and PB11 as alternate function mode
+	GPIOB->MODER &= ~(GPIO_MODER_MODE11_Msk | GPIO_MODER_MODE10_Msk);
+	GPIOB->MODER |= (0x02 << GPIO_MODER_MODE11_Pos) | (0x02 << GPIO_MODER_MODE10_Pos);
+
+	//Set PB10 and PB11 as alternative function
+	GPIOB->AFR[1] &= ~(GPIO_AFRH_AFSEL11_Msk | GPIO_AFRH_AFSEL10_Msk);
+	GPIOB->AFR[1] |= (0x07 << GPIO_AFRH_AFSEL11_Pos) | (0x07 << GPIO_AFRH_AFSEL10_Pos);
 	
 	// Set speed to medium
 	GPIOA->OSPEEDR &= ~(0x03 << GPIO_OSPEEDR_OSPEED8_Pos);	// Clear bits
@@ -132,7 +166,14 @@ void Input_GPIO_config(void)
 	
 }
 
-void ADC_config(void)
+//******************************************************************************//
+// Function: ADC_Config()
+// Input: None
+// Return: None
+// Description: Configures the ADC3 peripheral for temperature sensing.
+// Author: Justin Nguyen
+// *****************************************************************************//
+void ADC_Config(void)
 {
 	// Configure ADC3 channel 8 -> PF10 
 	// Disable battery sensing channel
@@ -160,16 +201,15 @@ void ADC_config(void)
 	ADC3->CR2 |= ADC_CR2_ADON;
 }
 
-void UART_config(void)
+//******************************************************************************//
+// Function: UART_Config()
+// Input: None
+// Return: None
+// Description: Configures the USART3 peripheral for serial communication.
+// Author: Justin Nguyen
+// *****************************************************************************//
+void UART_Config(void)
 {
-	// Set MODER to alternate function mode
-	GPIOB->MODER &= ~(GPIO_MODER_MODE11_Msk | GPIO_MODER_MODE10_Msk);
-	GPIOB->MODER |= (0x02 << GPIO_MODER_MODE11_Pos) | (0x02 << GPIO_MODER_MODE10_Pos);
-	
-	//Set alternative function AF7
-	GPIOB->AFR[1] &= ~(GPIO_AFRH_AFSEL11_Msk | GPIO_AFRH_AFSEL10_Msk);
-	GPIOB->AFR[1] |= (0x07 << GPIO_AFRH_AFSEL11_Pos) | (0x07 << GPIO_AFRH_AFSEL10_Pos);
-	
 	// Turn on 16 times over sampling
 	USART3->CR1 &= ~(USART_CR1_OVER8);
 	
@@ -203,7 +243,14 @@ void UART_config(void)
 
 }
 
-void timer6_config(void)
+//******************************************************************************//
+// Function: TIM_Config()
+// Input: None
+// Return: None
+// Description: Configures the TIM6 timer for generating 1 ms periodic interrupts.
+// Author: Justin Nguyen
+// *****************************************************************************//
+void TIM_Config(void)
 {
 	// Ensure timer is off
 	TIM6->CR1 &= ~TIM_CR1_CEN;
@@ -217,5 +264,4 @@ void timer6_config(void)
 	TIM6->ARR |= 33;
 	// Enable interrupt for TIM6 
 	TIM6->DIER |= TIM_DIER_UIE;
-	
 }

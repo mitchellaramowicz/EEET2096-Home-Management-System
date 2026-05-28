@@ -1,6 +1,23 @@
+/****************************************************
+*			STM32F439 Button Logic Handler  							*
+*			Developed for the STM32												*
+*			Author: Justin Nguyen													*
+*			Source File																		*
+*     Updated: 28/05/2026 	  											*
+*****************************************************/
+
 #include "button_handler.h"
 #include <stdint.h>
 
+//******************************************************************************//
+// Function: button_process()
+// Input: struct Button *button - pointer to button struct, 
+//        uint8_t input - current GPIO input state
+// Return: None
+// Description: Processes a button press state machine, implementing debouncing 
+//              and a 2-second lockout if the button is rapidly pressed.
+// Author: Justin Nguyen
+// *****************************************************************************//
 void button_process(struct Button *button, uint8_t input)
 {
 	switch (button->state)
@@ -50,7 +67,7 @@ void button_process(struct Button *button, uint8_t input)
 			break;
 
 		case LOCKOUT:
-			// No input for 2s
+			// No input for 2 seconds
 			if (button->lockout_time >=2000)
 			{
 				button->state = NO_INPUT;
@@ -58,5 +75,4 @@ void button_process(struct Button *button, uint8_t input)
 			break;
 	}
 	button->prevInput = input;
-
 }

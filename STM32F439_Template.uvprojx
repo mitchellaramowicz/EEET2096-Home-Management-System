@@ -543,6 +543,26 @@
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f4xx_it.h</FilePath>
             </File>
+            <File>
+              <FileName>adc_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\adc_handler.h</FilePath>
+            </File>
+            <File>
+              <FileName>button_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\button_handler.h</FilePath>
+            </File>
+            <File>
+              <FileName>control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\control.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\uart_handler.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1106,6 +1126,26 @@
               <FileName>stm32f4xx_it.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\inc\stm32f4xx_it.h</FilePath>
+            </File>
+            <File>
+              <FileName>adc_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\adc_handler.h</FilePath>
+            </File>
+            <File>
+              <FileName>button_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\button_handler.h</FilePath>
+            </File>
+            <File>
+              <FileName>control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\control.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart_handler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\uart_handler.h</FilePath>
             </File>
           </Files>
         </Group>

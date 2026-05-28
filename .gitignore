@@ -7,8 +7,6 @@
 # Keep root-level allowed files
 !/.gitignore
 !/README.md
-!/*.uvprojx
-!/*.uvoptx
 
 # Allow specific folders
 !/src/
