@@ -34,9 +34,8 @@ static uint32_t fan_lockout = 0;	// Timer for counting fan lockout time till aut
 //******************************************************************************//
 // Function: main()
 // Input: None
-// Return: int
-// Description: Entry point into the application. Initializes peripherals and 
-//               enters the main control loop.
+// Return: None
+// Description: Entry point into the application.
 // Authors: Justin Nguyen, Mitchell Aramowicz
 // *****************************************************************************//
 int main(void)
